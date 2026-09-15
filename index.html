@@ -61,6 +61,19 @@
     margin-top:48px;
     opacity:0; animation:fadeUp .5s .7s ease-out forwards;
   }
+  .close-btn{
+    display:inline-block;
+    margin-top:20px;
+    padding:12px 28px;
+    background:var(--text);
+    color:#fff;
+    font-size:15px; font-weight:500;
+    text-decoration:none;
+    border-radius:100px;
+    opacity:0; animation:fadeUp .5s .85s ease-out forwards;
+    transition:transform .15s ease, opacity .15s ease;
+  }
+  .close-btn:active{ transform:scale(0.96); opacity:.85; }
 </style>
 </head>
 <body>
@@ -71,6 +84,7 @@
   <div class="percent">−15%</div>
   <h1>Скидка активирована</h1>
   <div class="hint">Покажите этот экран баристу или официанту</div>
+  <a href="https://seventimesuralsk.github.io/seventimes/" class="close-btn">Закрыть</a>
 </div>
 
 <script>
