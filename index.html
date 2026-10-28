@@ -1,47 +1,552 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Seven Times · Контроль</title>
-<!-- Вход для админа. Если приложение получит новый адрес, поменять его здесь в трёх местах: meta refresh, APP и кнопка. -->
-<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbxzdRQkMjPZj222r-fFPUDHYkbvw7nFXG7-NX1ew65wW_GsEhfab_PnXgZISAx0qnHTDg/exec">
-<script>
-  var APP = "https://script.google.com/macros/s/AKfycbxzdRQkMjPZj222r-fFPUDHYkbvw7nFXG7-NX1ew65wW_GsEhfab_PnXgZISAx0qnHTDg/exec";
-  location.replace(APP);
-</script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Seven Times">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
 <style>
-  :root{ --bg:#ffffff; --text:#1d1d1f; --sub:#86868b; --accent:#0a6cff; }
-  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{
-    margin:0; padding:0; height:100%;
-    background:var(--bg); color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .wrap{ width:100%; max-width:420px; padding:24px; text-align:center; }
-  .icon{
-    width:76px; height:76px; margin:0 auto 20px; border-radius:20px;
-    background:var(--text); color:#fff; display:flex; align-items:center; justify-content:center;
-    font-size:42px; font-weight:700;
-  }
-  h1{ font-size:24px; font-weight:600; letter-spacing:-0.01em; margin:0 0 6px; }
-  p{ font-size:15px; color:var(--sub); margin:0; }
-  .btn{
-    display:inline-block; margin-top:28px; padding:14px 30px;
-    background:var(--accent); color:#fff; text-decoration:none;
-    font-size:16px; font-weight:600; border-radius:100px;
-  }
-  .btn:active{ opacity:.85; }
+/* Layout: iOS-style single column app on white — optional code screen, 3 steps of input, step 4 reveals the locked result */
+:root{
+  --bg:#ffffff; --card:#ffffff; --fg:#1c1c1e; --muted:#6e6e73; --sep:#e5e5ea; --line:#d9d9de; --soft:#f5f5f7;
+  --accent:#0a6cff; --accent-soft:rgba(10,108,255,.10);
+  --ok:#1f9d55; --warn:#c77700; --bad:#e5383b; --fill:rgba(120,120,128,.14);
+  --ok-soft:#e3f6ea; --warn-soft:#fff2db; --bad-soft:#fde8e8;
+  --bar:rgba(255,255,255,.92);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",Roboto,sans-serif;
+  --display:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 var(--font);-webkit-font-smoothing:antialiased}
+.app{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+[hidden]{display:none!important}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 34px/1.1 var(--display);letter-spacing:-.02em;margin:2px 0 14px;text-wrap:balance}
+.group-label{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:24px 16px 8px}
+.group{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:52px;position:relative}
+.row+.row::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--sep)}
+.row .grow{flex:1;min-width:0}
+.row small{display:block;color:var(--muted);font-size:13px}
+.foot{font-size:13px;color:var(--muted);margin:8px 16px 0;max-width:60ch}
+.howto{background:var(--soft);border-radius:14px;padding:14px 16px;font-size:15px;display:flex;gap:12px;align-items:flex-start}
+.howto b{display:block;margin-bottom:2px}
+.howto .ic{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+.steps{display:flex;gap:6px;margin:0 0 18px}
+.steps button{flex:1;background:none;border:0;padding:0;text-align:left;color:var(--muted);font:600 12px var(--font);display:flex;flex-direction:column;gap:6px;min-width:0;cursor:pointer}
+.steps button::before{content:"";height:4px;border-radius:2px;background:var(--sep)}
+.steps button.done::before{background:var(--ok)}
+.steps button.cur{color:var(--accent)}
+.steps button.cur::before{background:var(--accent)}
+input[type=text],input[type=password]{font:inherit;color:var(--fg);background:transparent;border:0;outline:0;width:100%;text-align:right;min-width:0}
+input::placeholder{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums;font-weight:600}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:6px 0 0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p,0%),var(--fill) var(--p,0%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#fff;border:1px solid var(--line);margin-top:-12px;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--fill)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--accent)}
+input[type=range]::-moz-range-thumb{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;background:#fff}
+.slider-row{display:block}
+.slider-row .top{display:flex;gap:12px;align-items:center}
+.stepper{display:flex;align-items:center;gap:6px;flex:none}
+.stepper button{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--accent);font:600 20px/1 var(--font);cursor:pointer}
+.stepper button:active{background:var(--accent-soft)}
+.stepper .num{min-width:58px;text-align:center;font-size:17px}
+.stepper .num i{font-style:normal;color:var(--muted);font-weight:400;font-size:13px}
+.check{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--muted);flex:none;display:grid;place-items:center;transition:.15s}
+.check svg{opacity:0;width:14px;height:14px}
+.on .check{background:var(--accent);border-color:var(--accent)}
+.on .check svg{opacity:1}
+button.row{width:100%;font:inherit;color:inherit;background:none;border:0;text-align:left;cursor:pointer}
+button.row:active{background:var(--fill)}
+.sw{position:relative;width:51px;height:31px;flex:none}
+.sw input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.sw span{position:absolute;inset:0;border-radius:31px;background:#e3e3e8;transition:.2s}
+.sw span::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:.2s}
+.sw input:checked+span{background:var(--bad)}
+.sw input:checked+span::after{transform:translateX(20px)}
+.sw input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;font:500 15px var(--font);color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 8px;cursor:pointer;min-width:0}
+.seg button small{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.seg button[aria-pressed=true] small{color:rgba(255,255,255,.8)}
+.result{border:1px solid var(--line);border-radius:22px;padding:28px 20px;text-align:center}
+.result .big{font:700 84px/1 var(--display);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.result .big i{font-style:normal;font-size:24px;color:var(--muted);font-weight:500;letter-spacing:0}
+.result .verdict{font:600 22px/1.2 var(--display);margin:12px 0 6px}
+.result .who{color:var(--muted);font-size:15px}
+.lock{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:13px;color:var(--muted);background:var(--soft);padding:6px 12px;border-radius:20px}
+.lock.ok{color:var(--ok);background:var(--ok-soft)}
+.lock.wait{color:var(--warn);background:var(--warn-soft)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--fill);white-space:nowrap}
+.ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+.pill.ok{background:var(--ok-soft)} .pill.warn{background:var(--warn-soft)} .pill.bad{background:var(--bad-soft)}
+.btn{display:block;width:100%;font:600 17px var(--font);padding:15px;border:0;border-radius:14px;background:var(--accent);color:#fff;cursor:pointer;margin-top:20px;text-align:center}
+.btn.sec{background:var(--accent-soft);color:var(--accent);margin-top:10px}
+.btn.danger{background:var(--bad)}
+.btn:active{opacity:.75}
+.btn:disabled{opacity:.4}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.alert{background:var(--bad-soft);border-radius:14px;padding:14px 16px;margin-top:16px;font-size:15px;text-align:left}
+.alert b{color:var(--bad)}
+.alert.info{background:var(--warn-soft)}
+.alert.info b{color:var(--warn)}
+.req{color:var(--bad);font-weight:700}
+.req-note{font-size:12px;color:var(--bad);text-transform:none;letter-spacing:0;margin-left:6px}
+.invalid{border-color:var(--bad)!important;box-shadow:0 0 0 3px rgba(229,56,59,.15)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.linkbtn{background:none;border:0;color:var(--accent);font:inherit;font-size:15px;padding:4px 0;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--fg);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:30;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.login{padding-top:10vh;text-align:center}
+.logo{width:76px;height:76px;border-radius:20px;background:var(--fg);color:#fff;display:grid;place-items:center;font:700 42px/1 var(--display);margin:0 auto 18px}
+.login .sub{color:var(--muted);margin:0 auto 24px;max-width:32ch}
+.login .row input{text-align:left;font-size:22px;letter-spacing:.2em}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--sep);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+nav .in{max-width:560px;margin:0 auto;display:flex}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font:500 10.5px var(--font);color:var(--muted);background:none;border:0;padding:4px 0;min-width:0;cursor:pointer}
+nav svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-current=page]{color:var(--accent)}
+nav button.off{opacity:.35}
+@media (prefers-reduced-motion:no-preference){section:not([hidden]){animation:in .28s ease}@keyframes in{from{opacity:0;transform:translateY(6px)}}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="icon">7</div>
-  <h1>Seven Times · Контроль</h1>
-  <p>Открываю приложение…</p>
-  <a class="btn" href="https://script.google.com/macros/s/AKfycbxzdRQkMjPZj222r-fFPUDHYkbvw7nFXG7-NX1ew65wW_GsEhfab_PnXgZISAx0qnHTDg/exec">Открыть, если не открылось</a>
+
+<div class="app">
+
+<!-- ВХОД -->
+<section id="v-login" hidden>
+  <div class="login">
+    <div class="logo">7</div>
+    <h1 id="cafeTitle">Seven Times</h1>
+    <p class="sub">Контроль официантов. Введи код доступа, его выдаёт владелец.</p>
+    <div class="group" id="codeGroup"><label class="row"><span>Код</span><input id="code" type="password" inputmode="numeric" autocomplete="off" placeholder="••••"></label></div>
+    <div id="loginErr"></div>
+    <button class="btn" type="button" id="loginBtn">Войти</button>
+  </div>
+</section>
+
+<div class="steps" id="steps"><button type="button" data-go="menu">1. Меню</button><button type="button" data-go="rotation">2. Ротация</button><button type="button" data-go="service">3. Сервис</button><button type="button" data-go="result">4. Итог</button></div>
+
+<!-- ШАГ 1 -->
+<section id="v-menu" hidden>
+  <div class="eyebrow">Шаг 1 из 4</div>
+  <h1>Экзамен по меню</h1>
+  <div class="howto"><span class="ic">?</span><div><b>Как заполнить</b>Выбери, кто проходит проверку, впиши имя официанта и своё. Задай вопросы по каждому пункту и поставь балл кнопками − и +.</div></div>
+  <div class="group-label">Кто проходит проверку <span class="req">*</span><span class="req-note">обязательно</span></div>
+  <div class="seg" id="roleSeg" role="group" aria-label="Кто проходит проверку">
+    <button type="button" data-v="intern">Стажёр<small>первая проверка</small></button>
+    <button type="button" data-v="exp">Опытный<small>уже работает</small></button>
+  </div>
+  <div class="group-label">Официант <span class="req">*</span><span class="req-note">имя обязательно</span></div>
+  <div class="group" id="nameGroup"><label class="row"><span>Имя</span><input id="name" type="text" list="namesList" placeholder="Имя сотрудника" autocomplete="off"></label></div>
+  <div class="group-label">Проверяет <span class="req">*</span><span class="req-note">запомнится на этом телефоне</span></div>
+  <div class="group" id="adminGroup"><label class="row"><span>Админ</span><input id="admin" type="text" list="adminsList" placeholder="Твоё имя" autocomplete="off"></label></div>
+  <datalist id="namesList"></datalist><datalist id="adminsList"></datalist>
+  <div class="group-label">Оценочный лист</div>
+  <div class="group" id="menuList"></div>
+  <div id="req1"></div>
+  <button class="btn" type="button" id="next1">Далее: ротация столов →</button>
+</section>
+
+<!-- ШАГ 2 -->
+<section id="v-rotation" hidden>
+  <div class="eyebrow">Шаг 2 из 4</div>
+  <h1>Ротация столов</h1>
+  <div class="howto"><span class="ic">?</span><div><b>Как заполнить</b>Столы у нас идут по очереди. Наблюдай за официантом всю смену и нажми на пункт, если он выполнен. Не выполнен — не трогай.</div></div>
+  <div class="group-label">Чек-лист смены</div>
+  <div class="group" id="rotList"></div>
+  <button class="btn" type="button" data-go="service">Далее: сервис и нарушения →</button>
+</section>
+
+<!-- ШАГ 3 -->
+<section id="v-service" hidden>
+  <div class="eyebrow">Шаг 3 из 4</div>
+  <h1>Сервис и нарушения</h1>
+  <div class="howto"><span class="ic">?</span><div><b>Как заполнить</b>Оцени три пункта. Ниже отметь нарушения, если они были. Потом нажми «Завершить проверку»: после этого изменить ничего нельзя, проверка сама уйдёт в Google Таблицу.</div></div>
+  <div class="group-label">Оценка работы</div>
+  <div class="group" id="svcList"></div>
+  <div class="group-label">Были ли нарушения? Включи, если да</div>
+  <div class="group" id="violList"></div>
+  <p class="foot">Любое нарушение — разбор с сотрудником сегодня, независимо от баллов.</p>
+  <div id="missing"></div>
+  <button class="btn danger" id="finishBtn" type="button">Завершить проверку</button>
+</section>
+
+<!-- ШАГ 4 -->
+<section id="v-result" hidden>
+  <div class="eyebrow">Шаг 4 из 4</div>
+  <h1>Итог</h1>
+  <div id="resultBox"></div>
+</section>
+
+<!-- ЖУРНАЛ -->
+<section id="v-log" hidden>
+  <div class="eyebrow" id="logEyebrow">Seven Times</div>
+  <h1>Журнал</h1>
+  <div id="queueBox"></div>
+  <div class="group" id="logList"><div class="empty">Загружаю журнал…</div></div>
+  <p class="foot">Последние 40 проверок из Google Таблицы. Изменить или удалить их из приложения нельзя. <button class="linkbtn" type="button" id="reloadBtn">Обновить</button></p>
+  <p class="foot" id="logoutRow"><button class="linkbtn" type="button" id="logoutBtn">Выйти на этом телефоне</button></p>
+</section>
+
 </div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<nav id="nav"><div class="in">
+  <button type="button" data-go="menu" data-t="menu"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>1. Меню</button>
+  <button type="button" data-go="rotation" data-t="rotation"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/></svg>2. Ротация</button>
+  <button type="button" data-go="service" data-t="service"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>3. Сервис</button>
+  <button type="button" data-go="result" data-t="result"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>4. Итог</button>
+  <button type="button" data-go="log" data-t="log"><svg viewBox="0 0 24 24"><path d="M6 4h12v16l-6-4-6 4z"/></svg>Журнал</button>
+</div></nav>
+
+<script>
+const CFG = {"cafe":"Seven Times","menu":[["Состав блюд и ингредиенты",20],["Выход блюд и размер порций",10],["Цены меню",15],["Вкус и особенности блюд",15],["Аллергены и ограничения",15],["Напитки, добавки, стоп-лист",10],["Рекомендации гостю",15]],"rotation":["Знает закреплённые номера столов","Своевременно замечает новых гостей","Принимает заказ без неоправданной задержки","Контролирует время приготовления и подачи","Возвращается к гостям проверить обслуживание","Не оставляет столы без внимания","Правильно передаёт стол другому официанту","Быстро убирает и готовит стол после гостей","Сообщает администратору о проблемах","Берёт новые столы строго по очереди"],"service":[["comm","Общение с гостями",20],["speed","Скорость и точность",15],["look","Внешний вид и дисциплина",10]],"violations":[["allergen","Ошибка по аллергенам"],["safety","Нарушение безопасности продуктов"],["rude","Грубость с гостем"]],"roles":{"intern":"Стажёр","exp":"Опытный"},"menuPoints":30,"rotPoints":25,"needCode":false};
+// Скрипт Google, который принимает проверки и пишет их в таблицу.
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzdRQkMjPZj222r-fFPUDHYkbvw7nFXG7-NX1ew65wW_GsEhfab_PnXgZISAx0qnHTDg/exec";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LS = {
+  get(k){ try { return localStorage.getItem(k); } catch(e) { return null; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch(e) {} },
+  del(k){ try { localStorage.removeItem(k); } catch(e) {} }
+};
+const K_CHECK = "st7-check", K_CODE = "st7-code", K_ADMIN = "st7-admin", K_QUEUE = "st7-queue";
+const CHECK = '<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>';
+const MENU_MAX = CFG.menu.reduce((s, m) => s + m[1], 0);
+
+/* ---------- состояние ---------- */
+const newId = () => "ST-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 7).toUpperCase();
+const fresh = () => ({
+  id: newId(), role: "", name: "",
+  menu: CFG.menu.map(() => 0), rot: CFG.rotation.map(() => false),
+  svc: Object.fromEntries(CFG.service.map(s => [s[0], 0])), viol: {}, done: null
+});
+let S = fresh();
+try {
+  const d = JSON.parse(LS.get(K_CHECK) || "null");
+  if (d && d.id && d.menu && d.menu.length === CFG.menu.length && d.rot && d.rot.length === CFG.rotation.length) S = Object.assign(fresh(), d);
+} catch(e) {}
+let code = LS.get(K_CODE) || "";
+let needCode = !!CFG.needCode; // по умолчанию вход без кода; владелец может включить код в меню таблицы
+let adminName = LS.get(K_ADMIN) || "";
+let queue = [];
+try { queue = JSON.parse(LS.get(K_QUEUE) || "[]") || []; } catch(e) { queue = []; }
+let journal = null, names = [], admins = [], sending = false, lastError = "";
+const saveLocal = () => LS.set(K_CHECK, JSON.stringify(S));
+const saveQueue = () => LS.set(K_QUEUE, JSON.stringify(queue));
+
+/* ---------- связь с Google ---------- */
+// На сайте GitHub задан SCRIPT_URL: запросы идут через fetch на скрипт Google.
+// Если страницу отдаёт сам Google, работает google.script.run.
+const API_URL = typeof SCRIPT_URL === "string" ? SCRIPT_URL : "";
+async function api(action, data) {
+  const body = Object.assign({ action, code }, data || {});
+  if (!API_URL) {
+    if (!window.google || !google.script || !google.script.run) throw new Error("Нет связи с Google");
+    const fn = { login: "login", save: "saveCheck", refresh: "refreshAnalytics" }[action];
+    const args = action === "save" ? [body.payload, code] : [code];
+    return new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args));
+  }
+  let res;
+  try {
+    res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) });
+  } catch (e) {
+    const err = new Error("Нет связи с интернетом"); err.network = true; throw err;
+  }
+  let out;
+  try { out = JSON.parse(await res.text()); } catch (e) {
+    const err = new Error("Сервер ответил с ошибкой. Попробуй ещё раз."); err.badResponse = true; throw err;
+  }
+  if (!out || out.ok === false) throw new Error((out && out.error) || "Ошибка сервера");
+  return out;
+}
+const untouched = () => !S.role && !S.name.trim() && S.menu.every(v => !v) && !S.rot.some(Boolean);
+const errText = e => String((e && e.message) || e || "Ошибка").replace(/^(Exception|Error|ScriptError):\s*/i, "");
+const isCodeError = m => /код доступа/i.test(m);
+
+/* ---------- расчёт (та же формула, что в таблице) ---------- */
+function calc() {
+  const menuTotal = S.menu.reduce((a, b) => a + b, 0);
+  const rotDone = S.rot.filter(Boolean).length;
+  const pMenu = Math.round(menuTotal * CFG.menuPoints / MENU_MAX);
+  const pRot = Math.round(rotDone * CFG.rotPoints / CFG.rotation.length);
+  const svc = CFG.service.reduce((s, x) => s + S.svc[x[0]], 0);
+  return { total: pMenu + pRot + svc, viol: CFG.violations.filter(v => S.viol[v[0]]).map(v => v[1]) };
+}
+function grade(v, crit) {
+  if (crit) return { t: "Нужна немедленная реакция", c: "bad", p: "Критично" };
+  if (v >= 90) return { t: "Готов к самостоятельной работе", c: "ok", p: "Готов" };
+  if (v >= 75) return { t: "Работает под контролем, дообучение", c: "warn", p: "Дообучение" };
+  return { t: "Не готов: обучение и повторная проверка", c: "bad", p: "Не готов" };
+}
+
+/* ---------- построение формы ---------- */
+function sliderRow(id, label, max, val) {
+  return `<div class="row slider-row"><div class="top"><span class="grow">${esc(label)}<small>максимум ${max}</small></span><span class="stepper"><button type="button" data-d="-1" aria-label="Минус">−</button><span class="num"><span id="${id}-v">${val}</span> <i>/ ${max}</i></span><button type="button" data-d="1" aria-label="Плюс">+</button></span></div><input type="range" id="${id}" min="0" max="${max}" value="${val}" style="--p:${val / max * 100}%" aria-label="${esc(label)}"></div>`;
+}
+function bindSlider(id, max, set) {
+  const el = $(id);
+  const apply = v => {
+    if (S.done) return;
+    v = Math.max(0, Math.min(max, v));
+    el.value = v; el.style.setProperty("--p", v / max * 100 + "%"); $(id + "-v").textContent = v;
+    set(v); saveLocal();
+  };
+  el.addEventListener("input", () => apply(+el.value));
+  el.closest(".row").querySelectorAll("[data-d]").forEach(b => b.addEventListener("click", () => apply(+el.value + +b.dataset.d)));
+}
+function build() {
+  $("name").value = S.name;
+  $("admin").value = adminName;
+  document.querySelectorAll("#roleSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === S.role));
+  $("menuList").innerHTML = CFG.menu.map(([q, m], i) => sliderRow("m" + i, q, m, S.menu[i])).join("");
+  CFG.menu.forEach(([, m], i) => bindSlider("m" + i, m, v => S.menu[i] = v));
+  $("rotList").innerHTML = CFG.rotation.map((q, i) => `<button type="button" class="row${S.rot[i] ? " on" : ""}" data-i="${i}" aria-pressed="${S.rot[i]}">${CHECK}<span class="grow">${esc(q)}</span></button>`).join("");
+  $("svcList").innerHTML = CFG.service.map(([k, l, m]) => sliderRow("s" + k, l, m, S.svc[k])).join("");
+  CFG.service.forEach(([k, , m]) => bindSlider("s" + k, m, v => S.svc[k] = v));
+  $("violList").innerHTML = CFG.violations.map(([k, l]) => `<label class="row"><span class="grow">${esc(l)}</span><span class="sw"><input type="checkbox" id="viol-${k}" ${S.viol[k] ? "checked" : ""}><span></span></span></label>`).join("");
+  CFG.violations.forEach(([k]) => $("viol-" + k).addEventListener("change", e => {
+    if (S.done) { e.target.checked = !!S.viol[k]; return; }
+    S.viol[k] = e.target.checked; saveLocal();
+  }));
+  $("finishBtn").disabled = false;
+  $("finishBtn").textContent = "Завершить проверку";
+  renderResult();
+}
+function fillLists() {
+  $("namesList").innerHTML = names.map(n => `<option value="${esc(n)}"></option>`).join("");
+  $("adminsList").innerHTML = admins.map(n => `<option value="${esc(n)}"></option>`).join("");
+}
+
+/* ---------- обязательные поля ---------- */
+const missing1 = () => {
+  const m = [];
+  if (!S.role) m.push("кто проходит проверку");
+  if (!S.name.trim()) m.push("имя официанта");
+  if (!adminName.trim()) m.push("кто проверяет");
+  return m;
+};
+function showReq() {
+  const m = missing1();
+  $("roleSeg").querySelectorAll("button").forEach(b => b.classList.toggle("invalid", !S.role));
+  $("nameGroup").classList.toggle("invalid", !S.name.trim());
+  $("adminGroup").classList.toggle("invalid", !adminName.trim());
+  $("req1").innerHTML = m.length ? `<div class="alert"><b>Заполни обязательные поля:</b> ${m.join(", ")}.</div>` : "";
+  return m.length === 0;
+}
+function clearReq() { if ($("req1").innerHTML) showReq(); }
+
+$("next1").addEventListener("click", () => { if (showReq()) go("rotation"); else scrollTo({ top: 0, behavior: "smooth" }); });
+$("roleSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || S.done) return;
+  S.role = b.dataset.v;
+  document.querySelectorAll("#roleSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  saveLocal(); clearReq();
+});
+$("name").addEventListener("input", e => { if (S.done) return; S.name = e.target.value; saveLocal(); clearReq(); });
+$("admin").addEventListener("input", e => { adminName = e.target.value; LS.set(K_ADMIN, adminName.trim()); clearReq(); });
+$("rotList").addEventListener("click", e => {
+  const b = e.target.closest("[data-i]"); if (!b || S.done) return;
+  const i = +b.dataset.i; S.rot[i] = !S.rot[i];
+  b.classList.toggle("on", S.rot[i]); b.setAttribute("aria-pressed", S.rot[i]); saveLocal();
+});
+
+function toast(t) {
+  const el = $("toast"); el.textContent = t; el.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+/* ---------- завершение: блокировка и автосохранение ---------- */
+let armed = false;
+$("finishBtn").addEventListener("click", () => {
+  if (S.done) return;
+  const miss = missing1();
+  if (miss.length) {
+    $("missing").innerHTML = `<div class="alert"><b>Не заполнено:</b> ${miss.join(", ")}. <button class="linkbtn" type="button" data-go="menu">Вернуться на шаг 1</button></div>`;
+    return;
+  }
+  $("missing").innerHTML = "";
+  const btn = $("finishBtn");
+  if (!armed) {
+    armed = true; btn.textContent = "Точно? Нажми ещё раз — изменить будет нельзя";
+    setTimeout(() => { armed = false; if (!S.done) btn.textContent = "Завершить проверку"; }, 4000);
+    return;
+  }
+  armed = false; btn.disabled = true;
+  const c = calc();
+  S.name = S.name.trim();
+  S.admin = adminName.trim();
+  S.done = { total: c.total, viol: c.viol, at: new Date().toISOString() };
+  queue.push({ id: S.id, finishedAt: S.done.at, name: S.name, role: S.role, admin: S.admin, menu: S.menu.slice(), rot: S.rot.slice(), svc: Object.assign({}, S.svc), viol: Object.assign({}, S.viol), total: c.total });
+  saveQueue(); saveLocal();
+  go("result");
+  flushQueue();
+});
+
+// Отправляет все неотправленные проверки по очереди. Повтор с тем же ID дубля не создаёт.
+async function flushQueue() {
+  if (sending || !queue.length || (needCode && !code)) { renderResult(); renderQueue(); return; }
+  sending = true; lastError = ""; renderResult();
+  let sent = 0;
+  while (queue.length) {
+    const item = queue[0];
+    try {
+      const res = await api("save", { payload: item });
+      queue.shift(); saveQueue(); sent++;
+      if (res && res.journal) { journal = res.journal; renderLog(); }
+    } catch (e) {
+      const m = errText(e);
+      if (isCodeError(m)) { sending = false; logout(codeMsg() + " Неотправленные проверки сохранятся."); return; }
+      lastError = m; break;
+    }
+  }
+  sending = false;
+  if (sent) {
+    toast(sent === 1 ? "Сохранено в Google Таблицу" : "Отправлено проверок: " + sent);
+    api("refresh").catch(() => {});
+  }
+  renderResult(); renderQueue();
+}
+const inQueue = id => queue.some(q => q.id === id);
+
+function renderResult() {
+  const box = $("resultBox");
+  if (!S.done) {
+    box.innerHTML = `<div class="howto"><span class="ic">!</span><div><b>Итог появится после шага 3</b>Пройди шаги 1–3 и нажми «Завершить проверку».</div></div><button class="btn sec" type="button" data-go="service">Перейти к шагу 3</button>`;
+    return;
+  }
+  const d = S.done, G = grade(d.total, d.viol.length > 0), pending = inQueue(S.id);
+  const when = new Date(d.at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+  const roleTxt = CFG.roles[S.role] || "";
+  const status = !pending ? `<div class="lock ok">${lockIcon()}Сохранено в таблице · изменить нельзя</div>`
+    : sending ? `<div class="lock wait">${lockIcon()}Сохраняю в Google Таблицу…</div>`
+    : `<div class="lock wait">${lockIcon()}Заблокировано · ждёт отправки</div>`;
+  box.innerHTML = `<div class="result"><div class="big ${G.c}">${d.total}<i> / 100</i></div><p class="verdict">${G.t}</p>
+    <div class="who">${esc(S.name)} · ${esc(roleTxt)} · ${when}<br>Админ: ${esc(S.admin || "")}</div>${status}</div>
+    ${d.viol.length ? `<div class="alert"><b>Нарушения:</b> ${esc(d.viol.join(", "))}. Разобрать с сотрудником сегодня.</div>` : ""}
+    ${pending && !sending ? `<div class="alert info"><b>Ещё не в таблице.</b> ${esc(lastError ? lastError.replace(/[.!]?\s*$/, ".") : "Нет связи.")} Проверка уже заблокирована на этом телефоне и отправится сама, когда появится интернет.</div><button class="btn sec" type="button" id="retryBtn">Отправить сейчас</button>` : ""}
+    <button class="btn" type="button" id="newBtn">Начать новую проверку</button>`;
+  const rb = $("retryBtn"); if (rb) rb.addEventListener("click", flushQueue);
+  $("newBtn").addEventListener("click", () => {
+    if (inQueue(S.id)) toast("Прошлая проверка отправится автоматически");
+    S = fresh(); saveLocal(); armed = false; build(); go("menu");
+  });
+}
+const lockIcon = () => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+
+/* ---------- журнал ---------- */
+function renderQueue() {
+  $("queueBox").innerHTML = queue.length
+    ? `<div class="alert info" style="margin:0 0 16px"><b>Ждут отправки: ${queue.length}.</b> Уйдут в таблицу сами, когда появится интернет. <button class="linkbtn" type="button" id="queueBtn">Отправить сейчас</button></div>`
+    : "";
+  const qb = $("queueBtn"); if (qb) qb.addEventListener("click", flushQueue);
+}
+function renderLog() {
+  const L = $("logList");
+  if (journal === null) { L.innerHTML = `<div class="empty">Загружаю журнал…</div>`; return; }
+  if (!journal.length) { L.innerHTML = `<div class="empty">Пока пусто. Завершённые проверки появятся здесь сами.</div>`; return; }
+  L.innerHTML = journal.map(x => {
+    const G = grade(x.total, x.viol > 0);
+    return `<div class="row"><span class="grow"><b style="font-weight:600">${esc(x.name)}</b><small>${esc(x.role)} · ${esc(x.date)} · ${esc(x.admin)}</small></span><span class="pill ${G.c}">${G.p}</span><span class="num" style="min-width:34px;text-align:right">${x.total}</span></div>`;
+  }).join("");
+}
+$("reloadBtn").addEventListener("click", () => loadBoot(true));
+$("logoutBtn").addEventListener("click", () => logout(""));
+
+/* ---------- вход ---------- */
+function loadBoot(showToast) {
+  return api("login").then(res => {
+    needCode = !!res.needCode;
+    names = res.names || []; admins = res.admins || []; journal = res.journal || [];
+    if (res.cafe) { $("cafeTitle").textContent = res.cafe; $("logEyebrow").textContent = res.cafe; }
+    fillLists(); renderLog(); renderQueue();
+    if (showToast) toast("Журнал обновлён");
+    flushQueue();
+  }).catch(e => {
+    const m = errText(e);
+    if (isCodeError(m)) logout(codeMsg());
+    // Скрипт Google ещё не умеет принимать запросы с сайта (старая версия): открываем приложение у Google.
+    else if (e && (e.network || e.badResponse) && API_URL && navigator.onLine && !queue.length && !S.done && untouched()) location.replace(API_URL);
+    else if (showToast) toast("Не удалось обновить: " + m);
+  });
+}
+const codeMsg = () => code ? "Код доступа изменился. Введи новый." : "Владелец включил вход по коду. Введи код.";
+function logout(msg) {
+  needCode = true;
+  code = ""; LS.del(K_CODE);
+  $("loginErr").innerHTML = msg ? `<div class="alert"><b>${esc(msg)}</b></div>` : "";
+  go("login");
+}
+$("loginBtn").addEventListener("click", tryLogin);
+$("code").addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); });
+function tryLogin() {
+  const v = $("code").value.trim();
+  if (!v) { $("codeGroup").classList.add("invalid"); return; }
+  const btn = $("loginBtn"); btn.disabled = true; btn.textContent = "Проверяю…";
+  $("loginErr").innerHTML = "";
+  code = v;
+  api("login").then(res => {
+    LS.set(K_CODE, v); $("code").value = ""; $("codeGroup").classList.remove("invalid");
+    names = res.names || []; admins = res.admins || []; journal = res.journal || [];
+    fillLists(); renderLog();
+    go(S.done ? "result" : "menu");
+    flushQueue();
+  }).catch(e => {
+    code = "";
+    $("codeGroup").classList.add("invalid");
+    $("loginErr").innerHTML = `<div class="alert"><b>${esc(errText(e))}</b></div>`;
+  }).finally(() => { btn.disabled = false; btn.textContent = "Войти"; });
+}
+
+/* ---------- навигация ---------- */
+const VIEWS = ["login", "menu", "rotation", "service", "result", "log"], STEPS = ["menu", "rotation", "service", "result"];
+function go(v) {
+  if (needCode && !code) v = "login";
+  if (v !== "login") {
+    if (S.done && ["menu", "rotation", "service"].includes(v)) v = "result";
+    if (!S.done && (v === "rotation" || v === "service") && missing1().length) { v = "menu"; setTimeout(showReq, 0); }
+  }
+  VIEWS.forEach(x => $("v-" + x).hidden = x !== v);
+  const ci = STEPS.indexOf(v);
+  $("steps").hidden = ci < 0;
+  $("nav").hidden = v === "login";
+  document.querySelectorAll("#steps button").forEach((b, i) => { b.className = i === ci ? "cur" : (i < ci || S.done) ? "done" : ""; });
+  document.querySelectorAll("#nav button").forEach(b => {
+    b.classList.toggle("off", !!S.done && ["menu", "rotation", "service"].includes(b.dataset.t));
+    if (b.dataset.t === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  if (v === "log") { renderLog(); renderQueue(); $("logoutRow").hidden = !needCode; }
+  scrollTo(0, 0);
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-go]");
+  if (b) go(b.dataset.go);
+});
+
+/* ---------- старт ---------- */
+$("cafeTitle").textContent = CFG.cafe;
+$("logEyebrow").textContent = CFG.cafe;
+build();
+renderQueue();
+if (!needCode || code) { go(S.done ? "result" : "menu"); loadBoot(false); }
+else go("login");
+</script>
 </body>
 </html>
