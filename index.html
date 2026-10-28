@@ -450,7 +450,7 @@ let journalItems = checksCache.items || [];
 let checksTotal = checksCache.total || 0;
 let statsTab = LS.get(K.tab) || "dash";
 let view = "menu", lastStep = "menu";
-let sending = false, lastError = "", serverOld = false;
+let sending = false, lastError = "", serverOld = false, booting = true;
 let checksLoading = false, checksAt = 0, logError = "";
 let reportLoading = false, reportAt = 0, statsError = "";
 const saveLocal = () => LS.set(K.check, JSON.stringify(S));
@@ -598,17 +598,22 @@ document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click
 $("pickBtn").addEventListener("click", () => {
   if (S.done) return;
   $("pickSearch").value = ""; $("pickErr").innerHTML = "";
-  $("pickAdd").hidden = activeStaff().length > 0;
-  $("pickAddToggle").hidden = activeStaff().length === 0;
+  pickAddState();
   setSeg("pickRoleSeg", S.role || "");
   renderPicker(); openSheet("picker");
 });
+// Форма добавления раскрыта сразу, только если список точно пуст (уже загрузился и в нём никого).
+function pickAddState() {
+  const empty = !activeStaff().length && !booting;
+  $("pickAdd").hidden = !empty;
+  $("pickAddToggle").hidden = empty;
+}
 function renderPicker() {
   const q = nameKey($("pickSearch").value);
   const list = activeStaff().filter(e => !q || nameKey(e.name).includes(q));
   $("pickList").innerHTML = list.length
     ? list.map(e => `<button type="button" class="row" data-pick="${esc(e.id)}"><span class="grow"><b>${esc(e.name)}</b><small>${esc(e.role || "статус не указан")}</small></span>${nameKey(e.name) === nameKey(S.name) ? TICK : ""}</button>`).join("")
-    : `<div class="empty">${activeStaff().length ? "Никого не нашёл. Добавь нового ниже." : "Список сотрудников пуст. Добавь первого ниже."}</div>`;
+    : `<div class="empty">${activeStaff().length ? "Никого не нашёл. Добавь нового ниже." : booting ? "Загружаю список сотрудников…" : "Список сотрудников пуст. Добавь первого ниже."}</div>`;
 }
 $("pickSearch").addEventListener("input", renderPicker);
 $("pickList").addEventListener("click", e => {
@@ -659,7 +664,7 @@ function renderSettings() {
   $("activeLabel").textContent = "В штате · " + act.length;
   $("staffActive").innerHTML = act.length
     ? act.map(e => `<button type="button" class="row" data-staff="${esc(e.id)}"><span class="grow"><b>${esc(e.name)}</b><small>${esc(e.role || "статус не указан")}${e.added ? " · в списке с " + esc(e.added) : ""}${e.local ? " · только на этом телефоне" : ""}</small></span><span class="chev">›</span></button>`).join("")
-    : `<div class="empty">Пока никого. Добавь сотрудников выше, и админ будет выбирать их из списка.</div>`;
+    : `<div class="empty">${booting ? "Загружаю список сотрудников…" : "Пока никого. Добавь сотрудников выше, и админ будет выбирать их из списка."}</div>`;
   $("removedLabel").hidden = $("staffRemoved").hidden = !rem.length;
   $("removedLabel").textContent = "Удалённые · " + rem.length;
   $("staffRemoved").innerHTML = rem.map(e => `<div class="row"><span class="grow"><b>${esc(e.name)}</b><small>Удалён ${esc(e.removed)}${e.removedBy ? " · " + esc(e.removedBy) : ""}</small><small style="color:var(--fg)">Причина: ${esc(e.reason)}</small></span></div>`).join("");
@@ -1083,6 +1088,10 @@ function loadBoot() {
   }).catch(e => {
     const m = errText(e);
     if (isCodeError(m)) logout(codeMsg());
+  }).finally(() => {
+    booting = false;
+    if (!$("picker").hidden) { pickAddState(); renderPicker(); }
+    renderSettings();
   });
 }
 const codeMsg = () => code ? "Код доступа изменился. Введи новый." : "Владелец включил вход по коду. Введи код.";
