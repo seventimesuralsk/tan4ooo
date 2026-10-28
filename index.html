@@ -41,6 +41,7 @@ h1.sm{font-size:28px}
 .row .grow{flex:1;min-width:0}
 .row b{font-weight:600}
 .row small{display:block;color:var(--muted);font-size:13px}
+.row small.ok{color:var(--ok)} .row small.warn{color:var(--warn)} .row small.bad{color:var(--bad)}
 .row .val{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
 .row .chev{color:#c4c4c7;font-size:20px;line-height:1}
 .foot{font-size:13px;color:var(--muted);margin:8px 16px 0;max-width:60ch}
@@ -170,6 +171,20 @@ details.card[open] summary .chev{transform:rotate(90deg)}
 .kv span{color:var(--muted)}
 .kv b{font-weight:600;text-align:right}
 .rec{margin-top:10px;background:var(--accent-soft);border-radius:12px;padding:10px 12px;font-size:14px}
+.ai{margin-top:14px;border-radius:16px;padding:14px 16px;background:linear-gradient(135deg,rgba(10,108,255,.09),rgba(140,82,255,.09));text-align:left}
+.ai .tag{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#5b45d6}
+.ai .when{font:600 20px/1.25 var(--display);margin:8px 0 2px}
+.ai .sub{font-size:14px;color:var(--fg)}
+.ai .why{font-size:14px;color:var(--muted);margin-top:6px}
+.ai.sm{padding:10px 12px;margin-top:10px}
+.ai.sm .when{font-size:16px;margin:4px 0 0}
+.ai-t{color:#5b45d6!important}
+.ai-t svg,.ai .tag svg{vertical-align:-2px}
+.datebar{display:flex;align-items:center;gap:8px;margin:14px 4px 0;font-size:14px;color:var(--muted)}
+.datebar b{color:var(--fg);font-weight:600}
+.datebar svg{flex:none}
+.row.locked{cursor:pointer}
+.row.locked b{color:var(--muted)}
 .matrix-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
 table.mx{border-collapse:separate;border-spacing:0;font-size:13px;font-variant-numeric:tabular-nums}
 table.mx th,table.mx td{padding:7px 4px;text-align:center;border-bottom:1px solid var(--sep);min-width:36px;white-space:nowrap}
@@ -236,7 +251,8 @@ nav button[aria-current=page]{color:var(--accent)}
 <section id="v-menu" hidden>
   <div class="eyebrow">Шаг 1 из 4</div>
   <h1>Экзамен по меню</h1>
-  <div class="howto"><span class="ic">?</span><div><b>Как заполнить</b>Выбери официанта из списка и впиши своё имя. Задай вопросы по каждому пункту и поставь балл кнопками − и +.</div></div>
+  <div class="howto"><span class="ic">?</span><div><b>Как заполнить</b>Выбери официанта из списка. Задай вопросы по каждому пункту и поставь балл кнопками − и +.</div></div>
+  <div class="datebar" id="checkDate"></div>
   <div class="group-label">Кто проходит проверку <span class="req">*</span><span class="req-note">обязательно</span></div>
   <div class="seg" id="roleSeg" role="group" aria-label="Кто проходит проверку">
     <button type="button" data-v="intern">Стажёр<small>первая проверка</small></button>
@@ -244,9 +260,7 @@ nav button[aria-current=page]{color:var(--accent)}
   </div>
   <div class="group-label">Официант <span class="req">*</span><span class="req-note">выбери из списка</span></div>
   <div class="group" id="nameGroup"><button type="button" class="row" id="pickBtn"><span>Официант</span><span class="grow" id="pickVal" style="text-align:right;color:var(--muted)">Выбрать из списка</span><span class="chev">›</span></button></div>
-  <div class="group-label">Проверяет <span class="req">*</span><span class="req-note">запомнится на этом телефоне</span></div>
-  <div class="group" id="adminGroup"><label class="row"><span>Админ</span><input id="admin" type="text" list="adminsList" placeholder="Твоё имя" autocomplete="off"></label></div>
-  <datalist id="adminsList"></datalist>
+  <p class="foot" id="dueHint" hidden></p>
   <div class="group-label">Оценочный лист</div>
   <div class="group" id="menuList"></div>
   <div id="req1"></div>
@@ -287,7 +301,7 @@ nav button[aria-current=page]{color:var(--accent)}
 <!-- ЖУРНАЛ -->
 <section id="v-log" hidden>
   <div class="head"><div><div class="eyebrow">Все проверки</div><h1>Журнал</h1></div><button class="refresh" type="button" id="logRefresh">Обновить</button></div>
-  <div class="searchbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="logSearch" type="search" placeholder="Поиск: официант или админ" autocomplete="off"></div>
+  <div class="searchbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="logSearch" type="search" placeholder="Поиск по имени" autocomplete="off"></div>
   <div id="queueBox"></div>
   <div class="meta" id="logMeta"></div>
   <div class="group" id="logList"></div>
@@ -310,7 +324,6 @@ nav button[aria-current=page]{color:var(--accent)}
     <button type="button" class="chip" data-st="matrix">Матрица навыков</button>
     <button type="button" class="chip" data-st="crit">Критерии</button>
     <button type="button" class="chip" data-st="trend">Динамика</button>
-    <button type="button" class="chip" data-st="admins">Администраторы</button>
     <button type="button" class="chip" data-st="viol">Нарушения</button>
   </div>
   <div id="statsBox"></div>
@@ -332,7 +345,7 @@ nav button[aria-current=page]{color:var(--accent)}
   </div>
   <div class="group-label" id="activeLabel">В штате</div>
   <div class="group" id="staffActive"></div>
-  <p class="foot">Нажми на сотрудника, чтобы сменить статус или удалить.</p>
+  <p class="foot">Нажми на сотрудника: исправить имя, сменить статус или удалить. Срок следующей проверки считает анализ ИИ по результатам, не раньше чем через 7 дней.</p>
   <div class="group-label" id="removedLabel">Удалённые</div>
   <div class="group" id="staffRemoved"></div>
   <p class="foot" id="logoutRow"><button class="linkbtn" type="button" id="logoutBtn">Выйти на этом телефоне</button></p>
@@ -346,7 +359,7 @@ nav button[aria-current=page]{color:var(--accent)}
   <div class="grab"></div>
   <div class="head"><h2>Кого проверяем</h2><button class="close" type="button" data-close>Готово</button></div>
   <div class="searchbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="pickSearch" type="search" placeholder="Поиск по имени" autocomplete="off"></div>
-  <div class="group" id="pickList"></div>
+  <div id="pickList"></div>
   <button class="btn sec" type="button" id="pickAddToggle">+ Добавить нового сотрудника</button>
   <div id="pickAdd" hidden style="margin-top:12px">
     <input class="field" id="pickNewName" type="text" placeholder="Имя и фамилия" autocomplete="off">
@@ -364,6 +377,8 @@ nav button[aria-current=page]{color:var(--accent)}
   <div class="grab"></div>
   <h2 id="actTitle"></h2>
   <p class="note" id="actNote"></p>
+  <div id="actPlan"></div>
+  <button class="btn sec" type="button" id="actRename">Исправить имя</button>
   <button class="btn sec" type="button" id="actRole"></button>
   <button class="btn danger" type="button" id="actRemove">Удалить из штата</button>
   <button class="btn ghost" type="button" data-close>Отмена</button>
@@ -384,6 +399,17 @@ nav button[aria-current=page]{color:var(--accent)}
   <button class="btn ghost" type="button" data-close>Отмена</button>
 </div></div>
 
+<!-- ИСПРАВИТЬ ИМЯ -->
+<div class="sheet" id="renameSheet" hidden role="dialog" aria-label="Исправить имя"><div class="in">
+  <div class="grab"></div>
+  <h2>Исправить имя</h2>
+  <p class="note">Все проверки останутся у этого сотрудника: в журнале и аналитике имя заменится на новое. Баллы не меняются.</p>
+  <input class="field" id="rnName" type="text" placeholder="Имя и фамилия" autocomplete="off">
+  <div id="rnErr"></div>
+  <button class="btn" type="button" id="rnConfirm">Сохранить</button>
+  <button class="btn ghost" type="button" data-close>Отмена</button>
+</div></div>
+
 <div class="toast" id="toast" role="status"></div>
 
 <nav id="nav"><div class="in">
@@ -394,7 +420,7 @@ nav button[aria-current=page]{color:var(--accent)}
 </div></nav>
 
 <script>
-const CFG = {"cafe":"Seven Times","menu":[["Состав блюд и ингредиенты",20],["Выход блюд и размер порций",10],["Цены меню",15],["Вкус и особенности блюд",15],["Аллергены и ограничения",15],["Напитки, добавки, стоп-лист",10],["Рекомендации гостю",15]],"rotation":["Знает закреплённые номера столов","Своевременно замечает новых гостей","Принимает заказ без неоправданной задержки","Контролирует время приготовления и подачи","Возвращается к гостям проверить обслуживание","Не оставляет столы без внимания","Правильно передаёт стол другому официанту","Быстро убирает и готовит стол после гостей","Сообщает администратору о проблемах","Берёт новые столы строго по очереди"],"service":[["comm","Общение с гостями",20],["speed","Скорость и точность",15],["look","Внешний вид и дисциплина",10]],"violations":[["allergen","Ошибка по аллергенам"],["safety","Нарушение безопасности продуктов"],["rude","Грубость с гостем"]],"roles":{"intern":"Стажёр","exp":"Опытный"},"menuPoints":30,"rotPoints":25};
+const CFG = {"cafe":"Seven Times","admin":"Танчо","menu":[["Состав блюд и ингредиенты",20],["Выход блюд и размер порций",10],["Цены меню",15],["Вкус и особенности блюд",15],["Аллергены и ограничения",15],["Напитки, добавки, стоп-лист",10],["Рекомендации гостю",15]],"rotation":["Знает закреплённые номера столов","Своевременно замечает новых гостей","Принимает заказ без неоправданной задержки","Контролирует время приготовления и подачи","Возвращается к гостям проверить обслуживание","Не оставляет столы без внимания","Правильно передаёт стол другому официанту","Быстро убирает и готовит стол после гостей","Сообщает администратору о проблемах","Берёт новые столы строго по очереди"],"service":[["comm","Общение с гостями",20],["speed","Скорость и точность",15],["look","Внешний вид и дисциплина",10]],"violations":[["allergen","Ошибка по аллергенам"],["safety","Нарушение безопасности продуктов"],["rude","Грубость с гостем"]],"roles":{"intern":"Стажёр","exp":"Опытный"},"menuPoints":30,"rotPoints":25,"plan":{"min":7,"max":90}};
 // Скрипт Google, который принимает проверки и пишет их в таблицу.
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlBj4SHRyQaB6eg40EXge0UQjXtidWYgLmQ9sPyUpHnV5YhbQx7nU0T4p-KD7Fdge93Q/exec";
 
@@ -406,10 +432,14 @@ const LS = {
   del(k){ try { localStorage.removeItem(k); } catch(e) {} }
 };
 const LSjson = (k, def) => { try { const v = JSON.parse(LS.get(k) || "null"); return v == null ? def : v; } catch(e) { return def; } };
-const K = { check: "st7-check", code: "st7-code", admin: "st7-admin", queue: "st7-queue", staff: "st7-staff", report: "st7-report", checks: "st7-checks", tab: "st7-stats-tab" };
+const K = { check: "st7-check", code: "st7-code", queue: "st7-queue", staff: "st7-staff", report: "st7-report", checks: "st7-checks", tab: "st7-stats-tab" };
+LS.del("st7-admin"); // раньше имя админа вводили вручную, теперь это всегда CFG.admin
 const CHECK = '<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>';
 const TICK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a6cff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
 const MENU_MAX = CFG.menu.reduce((s, m) => s + m[1], 0);
+const ALLERGEN_IX = CFG.menu.findIndex(m => /аллерген/i.test(m[0]));
+const SPARK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z"/></svg>';
+const LOCK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const ROLE_KEY = { "Стажёр": "intern", "Опытный": "exp" };
 const OLD_SCRIPT = "Чтобы это работало, обнови скрипт Google: вставь новый Code.gs и сделай «Новая версия» в «Управлении развертываниями».";
 
@@ -425,11 +455,53 @@ const plural = (n, f) => { const a = Math.abs(n) % 100, b = a % 10; return a > 1
 const normName = s => String(s || "").replace(/\s+/g, " ").trim().toLowerCase().replace(/(^|[\s-])([^\s-])/g, (m, a, b) => a + b.toUpperCase());
 const nameKey = s => normName(s).toLowerCase().replace(/ё/g, "е");
 const pad = n => (n < 10 ? "0" : "") + n;
+// Дни считаются по календарю телефона, номер дня — как в скрипте (дней с 01.01.1970).
+const dayOf = d => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+const todayNum = () => dayOf(new Date());
+const fmtDay = n => { const d = new Date(n * 86400000); return pad(d.getUTCDate()) + "." + pad(d.getUTCMonth() + 1) + "." + d.getUTCFullYear(); };
+const ruDate = n => new Date(n * 86400000).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).replace(/\s*г\.?$/, "");
+const daysTxt = n => n + " " + plural(n, ["день", "дня", "дней"]);
+
+/* ---------- анализ ИИ: срок следующей проверки (та же функция, что в скрипте Google) ---------- */
+function nextPlan_(h, lim) {
+  if (!h || !h.length) return null;
+  const L = h[h.length - 1];
+  const P = h.length > 1 ? h[h.length - 2] : null;
+  let streak = 0;
+  for (let i = h.length - 1; i >= 0 && h[i].t >= 90 && !h[i].v; i--) streak++;
+  const last3 = h.slice(-3).map(x => x.t);
+  const spread = last3.length === 3 ? Math.max.apply(null, last3) - Math.min.apply(null, last3) : 0;
+  const pastViol = h.slice(-3, -1).some(x => x.v);
+  const drop = P ? L.t - P.t : 0;
+  let days, why;
+  if (L.v) { days = lim.min; why = 'на проверке было нарушение, нужен быстрый повторный контроль'; }
+  else if (L.a != null && L.a < 0.7) { days = lim.min; why = 'аллергены знает на ' + Math.round(L.a * 100) + '%, это безопасность гостей'; }
+  else if (L.t < 75) { days = lim.min; why = 'балл ' + L.t + ': к самостоятельной работе не готов'; }
+  else if (L.t < 85) { days = 10; why = 'балл ' + L.t + ': нужно дообучение'; }
+  else if (L.t < 90) { days = 14; why = 'балл ' + L.t + ': почти готов, результат нужно закрепить'; }
+  else if (L.t < 95) { days = 30; why = 'балл ' + L.t + ': готов работать сам'; }
+  else { days = 45; why = 'балл ' + L.t + ': отличный результат'; }
+  const notes = [];
+  if (days > lim.min) {
+    if (streak >= 3) { days *= 2; notes.push(streak + ' проверки подряд 90+ без нарушений'); }
+    else if (streak === 2) { days = Math.round(days * 1.5); notes.push('вторая уверенная проверка подряд'); }
+    else if (h.length === 1 && L.t >= 90) { days = Math.min(days, 21); notes.push('первая проверка, уровень нужно подтвердить'); }
+    if (L.i) { days = Math.min(days, streak >= 2 ? 30 : 14); notes.push(streak >= 2 ? 'стажёр, держим на контроле раз в месяц' : 'стажёр, пока не подтвердил уровень дважды'); }
+    if (drop <= -10) { days = Math.max(lim.min, Math.round(days / 2)); notes.push('балл упал на ' + (-drop) + ' по сравнению с прошлой проверкой'); }
+    if (pastViol) { days = Math.min(days, 14); notes.push('в недавних проверках были нарушения'); }
+    if (spread >= 20) { days = Math.min(days, 21); notes.push('результаты скачут: ' + last3.join(' → ')); }
+  }
+  days = Math.max(lim.min, Math.min(lim.max, Math.round(days)));
+  why = why.charAt(0).toUpperCase() + why.slice(1) + (notes.length ? '; ' + notes.join('; ') : '') + '.';
+  return { days, next: L.d + days, why };
+}
+// Сколько дней ждать, пока человека можно проверить снова. 0 — можно сейчас.
+const waitOf = (p, t) => (p && p.chk && p.chk.plan ? Math.max(0, p.chk.plan.nextDay - (t == null ? todayNum() : t)) : 0);
 
 /* ---------- состояние ---------- */
 const newId = () => "ST-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 7).toUpperCase();
 const fresh = () => ({
-  id: newId(), role: "", name: "",
+  id: newId(), role: "", name: "", startedAt: "",
   menu: CFG.menu.map(() => 0), rot: CFG.rotation.map(() => false),
   svc: Object.fromEntries(CFG.service.map(s => [s[0], 0])), viol: {}, done: null
 });
@@ -440,15 +512,14 @@ let S = fresh();
 })();
 let code = LS.get(K.code) || "";
 let needCode = false;
-let adminName = LS.get(K.admin) || "";
 let queue = LSjson(K.queue, []);
 let staff = LSjson(K.staff, []);
-let admins = [];
 let report = LSjson(K.report, null);
 let checksCache = LSjson(K.checks, { items: [], total: 0 });
 let journalItems = checksCache.items || [];
 let checksTotal = checksCache.total || 0;
 let statsTab = LS.get(K.tab) || "dash";
+let bootAt = 0;
 let view = "menu", lastStep = "menu";
 let sending = false, lastError = "", serverOld = false, booting = true;
 let checksLoading = false, checksAt = 0, logError = "";
@@ -512,7 +583,7 @@ function bindSlider(id, max, set) {
     if (S.done) return;
     v = Math.max(0, Math.min(max, v));
     el.value = v; el.style.setProperty("--p", v / max * 100 + "%"); $(id + "-v").textContent = v;
-    set(v); saveLocal();
+    set(v); touch(); saveLocal();
   };
   el.addEventListener("input", () => apply(+el.value));
   el.closest(".row").querySelectorAll("[data-d]").forEach(b => b.addEventListener("click", () => apply(+el.value + +b.dataset.d)));
@@ -524,10 +595,34 @@ function renderPickVal() {
   $("pickVal").textContent = S.name || "Выбрать из списка";
   $("pickVal").style.color = S.name ? "var(--fg)" : "var(--muted)";
   $("pickVal").style.fontWeight = S.name ? "600" : "400";
+  renderDueHint();
+}
+// Под выбором официанта: кого сегодня можно проверить по анализу ИИ.
+function renderDueHint() {
+  const act = activeStaff(), t = todayNum();
+  const open = act.filter(p => !waitOf(p, t));
+  const el = $("dueHint");
+  el.hidden = !!S.name || !act.length || S.done != null;
+  if (el.hidden) return;
+  el.innerHTML = open.length
+    ? `<span class="ai-t">${SPARK}</span> Сегодня по анализу ИИ можно проверить ${open.length} из ${act.length}: ${esc(open.slice(0, 5).map(p => p.name).join(", "))}${open.length > 5 ? " и ещё " + (open.length - 5) : ""}.`
+    : `<span class="ai-t">${SPARK}</span> Сегодня проверять некого: у всех срок по анализу ИИ ещё впереди.`;
+}
+// Дата проверки фиксируется в момент начала (первое действие в форме) и потом не меняется.
+function touch() {
+  if (S.startedAt || S.done) return;
+  S.startedAt = new Date().toISOString();
+  renderDate();
+}
+function renderDate() {
+  const st = S.startedAt ? new Date(S.startedAt) : null;
+  const ic = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
+  $("checkDate").innerHTML = ic + (st
+    ? `<span>Дата проверки: <b>${esc(ruDate(dayOf(st)))}</b> · начата в ${pad(st.getHours())}:${pad(st.getMinutes())}, дата не изменится</span>`
+    : `<span>Дата проверки: <b>сегодня, ${esc(ruDate(todayNum()))}</b> · запишется в момент начала</span>`);
 }
 function build() {
-  $("admin").value = adminName;
-  renderRole(); renderPickVal();
+  renderRole(); renderPickVal(); renderDate();
   $("menuList").innerHTML = CFG.menu.map(([q, m], i) => sliderRow("m" + i, q, m, S.menu[i])).join("");
   CFG.menu.forEach(([, m], i) => bindSlider("m" + i, m, v => S.menu[i] = v));
   $("rotList").innerHTML = CFG.rotation.map((q, i) => `<button type="button" class="row${S.rot[i] ? " on" : ""}" data-i="${i}" aria-pressed="${S.rot[i]}">${CHECK}<span class="grow">${esc(q)}</span></button>`).join("");
@@ -536,14 +631,11 @@ function build() {
   $("violList").innerHTML = CFG.violations.map(([k, l]) => `<label class="row"><span class="grow">${esc(l)}</span><span class="sw"><input type="checkbox" id="viol-${k}" ${S.viol[k] ? "checked" : ""}><span></span></span></label>`).join("");
   CFG.violations.forEach(([k]) => $("viol-" + k).addEventListener("change", e => {
     if (S.done) { e.target.checked = !!S.viol[k]; return; }
-    S.viol[k] = e.target.checked; saveLocal();
+    S.viol[k] = e.target.checked; touch(); saveLocal();
   }));
   $("finishBtn").disabled = false;
   $("finishBtn").textContent = "Завершить проверку";
   renderResult();
-}
-function fillAdmins() {
-  $("adminsList").innerHTML = admins.map(n => `<option value="${esc(n)}"></option>`).join("");
 }
 
 /* ---------- обязательные поля ---------- */
@@ -551,14 +643,12 @@ const missing1 = () => {
   const m = [];
   if (!S.role) m.push("кто проходит проверку");
   if (!S.name.trim()) m.push("официант");
-  if (!adminName.trim()) m.push("кто проверяет");
   return m;
 };
 function showReq() {
   const m = missing1();
   $("roleSeg").querySelectorAll("button").forEach(b => b.classList.toggle("invalid", !S.role));
   $("nameGroup").classList.toggle("invalid", !S.name.trim());
-  $("adminGroup").classList.toggle("invalid", !adminName.trim());
   $("req1").innerHTML = m.length ? `<div class="alert"><b>Заполни обязательные поля:</b> ${m.join(", ")}.</div>` : "";
   return m.length === 0;
 }
@@ -567,12 +657,11 @@ function clearReq() { if ($("req1").innerHTML) showReq(); }
 $("next1").addEventListener("click", () => { if (showReq()) go("rotation"); else scrollTo({ top: 0, behavior: "smooth" }); });
 $("roleSeg").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || S.done) return;
-  S.role = b.dataset.v; renderRole(); saveLocal(); clearReq();
+  S.role = b.dataset.v; touch(); renderRole(); saveLocal(); clearReq();
 });
-$("admin").addEventListener("input", e => { adminName = e.target.value; LS.set(K.admin, adminName.trim()); clearReq(); });
 $("rotList").addEventListener("click", e => {
   const b = e.target.closest("[data-i]"); if (!b || S.done) return;
-  const i = +b.dataset.i; S.rot[i] = !S.rot[i];
+  const i = +b.dataset.i; S.rot[i] = !S.rot[i]; touch();
   b.classList.toggle("on", S.rot[i]); b.setAttribute("aria-pressed", S.rot[i]); saveLocal();
 });
 
@@ -589,7 +678,7 @@ function openSheet(id) {
   $("sheetBg").hidden = false; $(id).hidden = false; document.body.classList.add("noscroll");
 }
 function closeSheets(silent) {
-  ["picker", "actionSheet", "removeSheet"].forEach(x => $(x).hidden = true);
+  ["picker", "actionSheet", "removeSheet", "renameSheet"].forEach(x => $(x).hidden = true);
   $("sheetBg").hidden = true; document.body.classList.remove("noscroll");
 }
 $("sheetBg").addEventListener("click", () => closeSheets());
@@ -601,6 +690,7 @@ $("pickBtn").addEventListener("click", () => {
   pickAddState();
   setSeg("pickRoleSeg", S.role || "");
   renderPicker(); openSheet("picker");
+  if (!booting && Date.now() - bootAt > 120000) loadBoot(); // сроки могли измениться на другом телефоне
 });
 // Форма добавления раскрыта сразу, только если список точно пуст (уже загрузился и в нём никого).
 function pickAddState() {
@@ -608,22 +698,44 @@ function pickAddState() {
   $("pickAdd").hidden = !empty;
   $("pickAddToggle").hidden = empty;
 }
+const lastTxt = p => (p.chk ? "последняя " + p.chk.last + " · " + p.chk.total + " б." : "ещё не проверяли");
+const lockMsg = p => p.name + ": можно проверить с " + p.chk.plan.next + ". Так решил анализ ИИ по прошлой проверке.";
+// Сначала те, кого можно проверить (без проверок и самые просроченные сверху), потом закрытые до срока.
 function renderPicker() {
   const q = nameKey($("pickSearch").value);
-  const list = activeStaff().filter(e => !q || nameKey(e.name).includes(q));
-  $("pickList").innerHTML = list.length
-    ? list.map(e => `<button type="button" class="row" data-pick="${esc(e.id)}"><span class="grow"><b>${esc(e.name)}</b><small>${esc(e.role || "статус не указан")}</small></span>${nameKey(e.name) === nameKey(S.name) ? TICK : ""}</button>`).join("")
-    : `<div class="empty">${activeStaff().length ? "Никого не нашёл. Добавь нового ниже." : booting ? "Загружаю список сотрудников…" : "Список сотрудников пуст. Добавь первого ниже."}</div>`;
+  const all = activeStaff();
+  const list = all.filter(e => !q || nameKey(e.name).includes(q));
+  if (!list.length) {
+    $("pickList").innerHTML = `<div class="group"><div class="empty">${all.length ? "Никого не нашёл. Добавь нового ниже." : booting ? "Загружаю список сотрудников…" : "Список сотрудников пуст. Добавь первого ниже."}</div></div>`;
+    return;
+  }
+  const t = todayNum();
+  const nd = p => (p.chk && p.chk.plan ? p.chk.plan.nextDay : -1);
+  const order = (a, b) => nd(a) - nd(b) || a.name.localeCompare(b.name, "ru");
+  const open = list.filter(p => !waitOf(p, t)).sort(order), shut = list.filter(p => waitOf(p, t)).sort(order);
+  const openRow = p => {
+    const late = p.chk && p.chk.plan ? t - p.chk.plan.nextDay : 0;
+    const mark = nameKey(p.name) === nameKey(S.name) ? TICK
+      : `<span class="pill ${late > 0 ? "warn" : "ok"}">${!p.chk ? "первая" : late > 0 ? "пора" : "можно"}</span>`;
+    return `<button type="button" class="row" data-pick="${esc(p.id)}"><span class="grow"><b>${esc(p.name)}</b><small>${esc(p.role || "статус не указан")} · ${esc(lastTxt(p))}</small>${late > 0 ? `<small class="warn">срок по анализу ИИ был ${esc(p.chk.plan.next)}</small>` : ""}</span>${mark}</button>`;
+  };
+  const shutRow = p => `<div class="row locked" role="button" tabindex="0" data-locked="${esc(p.id)}"><span class="grow"><b>${esc(p.name)}</b><small>${esc(p.role || "статус не указан")} · ${esc(lastTxt(p))}</small><small class="ai-t">${SPARK} ИИ: можно с ${esc(p.chk.plan.next)} · через ${daysTxt(waitOf(p, t))}</small></span>${LOCK}</div>`;
+  $("pickList").innerHTML = `<div class="group-label">Можно проверить · ${open.length}</div>` +
+    (open.length ? `<div class="group">${open.map(openRow).join("")}</div>` : `<div class="group"><div class="empty">Сейчас некого: у всех срок по анализу ИИ ещё не наступил.</div></div>`) +
+    (shut.length ? `<div class="group-label">Рано, по анализу ИИ · ${shut.length}</div><div class="group">${shut.map(shutRow).join("")}</div>` : "");
 }
 $("pickSearch").addEventListener("input", renderPicker);
 $("pickList").addEventListener("click", e => {
-  const b = e.target.closest("[data-pick]"); if (!b) return;
-  const p = staff.find(x => x.id === b.dataset.pick); if (p) selectWaiter(p);
+  const b = e.target.closest("[data-pick]");
+  if (b) { const p = staff.find(x => x.id === b.dataset.pick); if (p) selectWaiter(p); return; }
+  const l = e.target.closest("[data-locked]");
+  if (l) { const p = staff.find(x => x.id === l.dataset.locked); if (p) toast(lockMsg(p)); }
 });
 function selectWaiter(p) {
+  if (waitOf(p)) { toast(lockMsg(p)); return; } // раньше срока проверку не начать
   S.name = p.name;
   if (ROLE_KEY[p.role]) S.role = ROLE_KEY[p.role];
-  saveLocal(); renderRole(); renderPickVal(); clearReq(); closeSheets();
+  touch(); saveLocal(); renderRole(); renderPickVal(); clearReq(); closeSheets();
 }
 $("pickAddToggle").addEventListener("click", () => { $("pickAdd").hidden = false; $("pickAddToggle").hidden = true; $("pickNewName").value = $("pickSearch").value; });
 $("pickRoleSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setSeg("pickRoleSeg", b.dataset.v); });
@@ -647,7 +759,7 @@ $("pickAddBtn").addEventListener("click", async () => {
 /* ---------- сотрудники ---------- */
 async function addStaff(name, role) {
   try {
-    const res = await api("staffAdd", { data: { name, role, admin: adminName.trim() } });
+    const res = await api("staffAdd", { data: { name, role, admin: CFG.admin } });
     staff = res.staff; saveStaff(); renderSettings();
   } catch (e) {
     if (!e.oldScript) throw e;
@@ -659,16 +771,24 @@ async function addStaff(name, role) {
   }
   return staff.find(x => x.active && nameKey(x.name) === nameKey(name));
 }
+// Строка срока под именем: когда человека можно проверить снова.
+function planLine(p) {
+  if (!p.chk || !p.chk.plan) return `<small class="ok">ещё не проверяли · можно проверить сейчас</small>`;
+  const w = waitOf(p);
+  return w ? `<small class="ai-t">${SPARK} ИИ: можно проверить с ${esc(p.chk.plan.next)} (через ${daysTxt(w)})</small>`
+    : `<small class="ok">${SPARK} ИИ: можно проверить сейчас</small>`;
+}
 function renderSettings() {
   const act = activeStaff(), rem = staff.filter(e => !e.active);
   $("activeLabel").textContent = "В штате · " + act.length;
   $("staffActive").innerHTML = act.length
-    ? act.map(e => `<button type="button" class="row" data-staff="${esc(e.id)}"><span class="grow"><b>${esc(e.name)}</b><small>${esc(e.role || "статус не указан")}${e.added ? " · в списке с " + esc(e.added) : ""}${e.local ? " · только на этом телефоне" : ""}</small></span><span class="chev">›</span></button>`).join("")
-    : `<div class="empty">${booting ? "Загружаю список сотрудников…" : "Пока никого. Добавь сотрудников выше, и админ будет выбирать их из списка."}</div>`;
+    ? act.map(e => `<button type="button" class="row" data-staff="${esc(e.id)}"><span class="grow"><b>${esc(e.name)}</b><small>${esc(e.role || "статус не указан")} · ${esc(lastTxt(e))}${e.local ? " · только на этом телефоне" : ""}</small>${planLine(e)}</span><span class="chev">›</span></button>`).join("")
+    : `<div class="empty">${booting ? "Загружаю список сотрудников…" : "Пока никого. Добавь сотрудников выше, и их можно будет выбирать из списка."}</div>`;
   $("removedLabel").hidden = $("staffRemoved").hidden = !rem.length;
   $("removedLabel").textContent = "Удалённые · " + rem.length;
-  $("staffRemoved").innerHTML = rem.map(e => `<div class="row"><span class="grow"><b>${esc(e.name)}</b><small>Удалён ${esc(e.removed)}${e.removedBy ? " · " + esc(e.removedBy) : ""}</small><small style="color:var(--fg)">Причина: ${esc(e.reason)}</small></span></div>`).join("");
+  $("staffRemoved").innerHTML = rem.map(e => `<div class="row"><span class="grow"><b>${esc(e.name)}</b><small>Удалён ${esc(e.removed)}</small><small style="color:var(--fg)">Причина: ${esc(e.reason)}</small></span></div>`).join("");
   $("logoutRow").hidden = !needCode;
+  renderDueHint();
 }
 $("setRoleSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setSeg("setRoleSeg", b.dataset.v); });
 $("setAddBtn").addEventListener("click", async () => {
@@ -691,7 +811,11 @@ $("staffActive").addEventListener("click", e => {
   const p = staff.find(x => x.id === b.dataset.staff); if (!p) return;
   actId = p.id;
   $("actTitle").textContent = p.name;
-  $("actNote").textContent = (p.role || "Статус не указан") + (p.added ? " · в списке с " + p.added : "");
+  $("actNote").textContent = (p.role || "Статус не указан") + (p.added ? " · в списке с " + p.added : "") + " · " + lastTxt(p);
+  const w = waitOf(p);
+  $("actPlan").innerHTML = p.chk && p.chk.plan
+    ? `<div class="ai sm" style="margin:0 0 4px"><div class="tag">${SPARK} Анализ ИИ</div><div class="when">${w ? "Можно проверить с " + esc(p.chk.plan.next) + " · через " + daysTxt(w) : "Можно проверить сейчас"}</div><div class="why">${esc(p.chk.plan.why)}</div></div>`
+    : "";
   const toExp = p.role !== "Опытный";
   $("actRole").textContent = toExp ? "Сделать опытным" : "Сделать стажёром";
   $("actRole").dataset.role = toExp ? "exp" : "intern";
@@ -727,10 +851,10 @@ $("rmConfirm").addEventListener("click", async () => {
   try {
     const p = staff.find(x => x.id === actId);
     if (p && p.local) {
-      p.active = false; p.removed = new Date().toLocaleDateString("ru-RU"); p.reason = reason; p.removedBy = adminName.trim();
+      p.active = false; p.removed = new Date().toLocaleDateString("ru-RU"); p.reason = reason; p.removedBy = CFG.admin;
       saveStaff();
     } else {
-      const res = await api("staffRemove", { data: { id: actId, reason, admin: adminName.trim() } });
+      const res = await api("staffRemove", { data: { id: actId, reason, admin: CFG.admin } });
       staff = res.staff; saveStaff();
     }
     renderSettings(); closeSheets(); toast("Удалён из штата"); reportAt = 0;
@@ -739,6 +863,42 @@ $("rmConfirm").addEventListener("click", async () => {
   }
   btn.disabled = false; btn.textContent = "Удалить";
 });
+
+// Исправить имя: только здесь, в настройках. История проверок переходит на новое имя.
+$("actRename").addEventListener("click", () => {
+  const p = staff.find(x => x.id === actId); if (!p) return;
+  $("rnName").value = p.name; $("rnErr").innerHTML = "";
+  openSheet("renameSheet");
+  setTimeout(() => $("rnName").focus(), 50);
+});
+$("rnName").addEventListener("keydown", e => { if (e.key === "Enter") $("rnConfirm").click(); });
+$("rnName").addEventListener("input", () => { $("rnErr").innerHTML = ""; });
+$("rnConfirm").addEventListener("click", async () => {
+  const p = staff.find(x => x.id === actId); if (!p) return;
+  const name = normName($("rnName").value);
+  const err = name.length < 2 ? "Впиши имя полностью" : name === p.name ? "Имя не изменилось" : "";
+  if (err) { $("rnErr").innerHTML = `<div class="alert"><b>${err}</b></div>`; return; }
+  const old = p.name, btn = $("rnConfirm");
+  btn.disabled = true; btn.textContent = "Сохраняю…";
+  try {
+    if (p.local) { p.name = name; saveStaff(); }
+    else { const res = await api("staffRename", { data: { id: p.id, name } }); staff = res.staff; saveStaff(); }
+    renameLocal(old, name);
+    renderSettings(); closeSheets(); toast("Имя исправлено, история проверок перенесена");
+    checksAt = 0; reportAt = 0;
+  } catch (e) {
+    $("rnErr").innerHTML = `<div class="alert"><b>${esc(failText(e))}</b></div>`;
+  }
+  btn.disabled = false; btn.textContent = "Сохранить";
+});
+// Неотправленные проверки и открытая форма тоже получают новое имя, чтобы не появился «двойник».
+function renameLocal(old, name) {
+  const k = nameKey(old);
+  queue.forEach(q => { if (nameKey(q.name) === k) q.name = name; });
+  saveQueue();
+  journalItems.forEach(x => { if (nameKey(x.name) === k) x.name = name; });
+  if (nameKey(S.name) === k) { S.name = name; saveLocal(); renderPickVal(); if (S.done) renderResult(); }
+}
 
 /* ---------- завершение: блокировка и автосохранение ---------- */
 let armed = false;
@@ -759,9 +919,23 @@ $("finishBtn").addEventListener("click", () => {
   armed = false; btn.disabled = true;
   const c = calc();
   S.name = S.name.trim();
-  S.admin = adminName.trim();
-  S.done = { total: c.total, viol: c.viol, at: new Date().toISOString() };
-  queue.push({ id: S.id, finishedAt: S.done.at, name: S.name, role: S.role, admin: S.admin, menu: S.menu.slice(), rot: S.rot.slice(), svc: Object.assign({}, S.svc), viol: Object.assign({}, S.viol), total: c.total });
+  const at = new Date().toISOString();
+  if (!S.startedAt) S.startedAt = at;
+  // Анализ ИИ сразу на телефоне (работает и без интернета): история человека + эта проверка.
+  const day = dayOf(new Date(S.startedAt));
+  const entry = staff.find(x => x.active && nameKey(x.name) === nameKey(S.name));
+  const hist = ((entry && entry.chk && entry.chk.hist) || []).concat([{
+    d: day, t: c.total, v: c.viol.length, i: S.role === "intern",
+    a: ALLERGEN_IX >= 0 ? S.menu[ALLERGEN_IX] / CFG.menu[ALLERGEN_IX][1] : null,
+  }]);
+  const pl = nextPlan_(hist, CFG.plan);
+  const plan = { days: pl.days, nextDay: pl.next, next: fmtDay(pl.next), why: pl.why };
+  S.done = { total: c.total, viol: c.viol, at, plan };
+  if (entry) {
+    entry.chk = { n: ((entry.chk && entry.chk.n) || 0) + 1, last: fmtDay(day), lastDay: day, total: c.total, verdict: grade(c.total, c.viol.length > 0).p, hist: hist.slice(-5), plan };
+    saveStaff();
+  }
+  queue.push({ id: S.id, startedAt: S.startedAt, finishedAt: at, name: S.name, role: S.role, admin: CFG.admin, menu: S.menu.slice(), rot: S.rot.slice(), svc: Object.assign({}, S.svc), viol: Object.assign({}, S.viol), total: c.total, plan });
   saveQueue(); saveLocal();
   go("result");
   flushQueue();
@@ -775,8 +949,14 @@ async function flushQueue() {
   while (queue.length) {
     const item = queue[0];
     try {
-      await api("save", { payload: item });
+      const res = await api("save", { payload: item });
       queue.shift(); saveQueue(); sent++;
+      if (res.staff) {
+        // Срок из таблицы — по всей истории человека; он главнее телефонного.
+        staff = res.staff; saveStaff();
+        const p = staff.find(x => x.active && nameKey(x.name) === nameKey(item.name));
+        if (S.done && item.id === S.id && p && p.chk && p.chk.plan) { S.done.plan = p.chk.plan; saveLocal(); }
+      }
     } catch (e) {
       const m = errText(e);
       if (isCodeError(m)) { sending = false; logout(codeMsg() + " Неотправленные проверки сохранятся."); return; }
@@ -786,7 +966,7 @@ async function flushQueue() {
   sending = false;
   if (sent) {
     toast(sent === 1 ? "Проверка сохранена в журнал" : "Отправлено проверок: " + sent);
-    checksAt = 0; reportAt = 0;
+    checksAt = 0; reportAt = 0; renderSettings();
     api("refresh").catch(() => {});
     if (view === "log") loadChecks(false);
   }
@@ -801,13 +981,14 @@ function renderResult() {
     return;
   }
   const d = S.done, G = grade(d.total, d.viol.length > 0), pending = inQueue(S.id);
-  const dt = new Date(d.at);
+  const dt = new Date(S.startedAt || d.at);
   const when = dt.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) + ", " + pad(dt.getHours()) + ":" + pad(dt.getMinutes());
   const status = !pending ? `<div class="lock ok">${lockIcon()}Сохранено в журнал · изменить нельзя</div>`
     : sending ? `<div class="lock wait">${lockIcon()}Сохраняю…</div>`
     : `<div class="lock wait">${lockIcon()}Заблокировано · ждёт отправки</div>`;
   box.innerHTML = `<div class="result"><div class="big ${G.c}">${d.total}<i> / 100</i></div><p class="verdict">${G.t}</p>
-    <div class="who">${esc(S.name)} · ${esc(CFG.roles[S.role] || "")}<br>${when} · Админ: ${esc(S.admin || "")}</div>${status}</div>
+    <div class="who">${esc(S.name)} · ${esc(CFG.roles[S.role] || "")}<br>${when}</div>${status}</div>
+    ${aiBlock(d.plan)}
     ${d.viol.length ? `<div class="alert"><b>Нарушения:</b> ${esc(d.viol.join(", "))}. Разобрать с сотрудником сегодня.</div>` : ""}
     ${pending && !sending ? `<div class="alert info"><b>Ещё не в журнале.</b> ${esc(lastError ? lastError.replace(/[.!]?\s*$/, ".") : "Нет связи.")} Проверка уже заблокирована на этом телефоне и отправится сама, когда появится интернет.</div><button class="btn sec" type="button" id="retryBtn">Отправить сейчас</button>` : ""}
     <button class="btn" type="button" id="newBtn">Начать новую проверку</button>`;
@@ -816,6 +997,23 @@ function renderResult() {
     if (inQueue(S.id)) toast("Прошлая проверка отправится автоматически");
     S = fresh(); saveLocal(); armed = false; build(); go("menu");
   });
+}
+// Итог анализа ИИ после проверки: когда человека можно проверить снова и почему.
+function aiBlock(plan) {
+  if (!plan) return "";
+  const w = Math.max(0, plan.nextDay - todayNum());
+  return `<div class="ai" id="aiBox"><div class="tag">${SPARK} Полностью проанализировано ИИ</div>
+    <div class="when">${w ? "Можно проверить через " + daysTxt(w) : "Можно проверить уже сегодня"}</div>
+    <div class="sub">${w ? "С " + esc(ruDate(plan.nextDay)) + ". Раньше начать проверку не получится." : "Срок по анализу наступил."}</div>
+    <div class="why">${esc(plan.why)}</div></div>`;
+}
+// То же в журнале: что решил анализ после конкретной проверки.
+function aiAfter(plan) {
+  if (!plan) return "";
+  const w = plan.nextDay - todayNum();
+  return `<div class="ai sm"><div class="tag">${SPARK} Анализ ИИ после этой проверки</div>
+    <div class="when">Следующая проверка с ${esc(plan.next)}${w > 0 ? " · через " + daysTxt(w) : w === 0 ? " · сегодня" : " · срок уже наступил"}</div>
+    <div class="why">${esc(plan.why)}</div></div>`;
 }
 const lockIcon = () => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 
@@ -841,9 +1039,10 @@ async function loadChecks(more) {
 }
 function pendingChecks() {
   return queue.map(q => {
-    const c = calcOf(q.menu, q.rot, q.svc, q.viol), dt = new Date(q.finishedAt);
+    const c = calcOf(q.menu, q.rot, q.svc, q.viol), dt = new Date(q.startedAt || q.finishedAt);
+    const dur = q.startedAt ? Math.round((new Date(q.finishedAt) - dt) / 60000) : null;
     return {
-      id: q.id, pending: true, name: q.name, role: CFG.roles[q.role] || "", admin: q.admin,
+      id: q.id, pending: true, name: q.name, role: CFG.roles[q.role] || "", plan: q.plan || null, dur,
       date: pad(dt.getDate()) + "." + pad(dt.getMonth() + 1) + "." + dt.getFullYear(), time: pad(dt.getHours()) + ":" + pad(dt.getMinutes()),
       total: c.total, verdict: grade(c.total, c.viol.length > 0).p, menu: q.menu, rot: q.rot.map(x => (x ? 1 : 0)), svc: q.svc,
       viol: CFG.violations.map(v => (q.viol[v[0]] ? 1 : 0)), violCount: c.viol.length, menuTotal: c.menuTotal, rotDone: c.rotDone,
@@ -855,7 +1054,7 @@ function renderLog() {
   renderQueue();
   const q = nameKey($("logSearch").value);
   const all = pendingChecks().concat(journalItems.filter(x => !inQueue(x.id)));
-  const list = all.filter(x => !q || nameKey(x.name).includes(q) || nameKey(x.admin).includes(q));
+  const list = all.filter(x => !q || nameKey(x.name).includes(q));
   const L = $("logList");
   $("logRefresh").disabled = checksLoading;
   $("logRefresh").textContent = checksLoading ? "Загружаю…" : "Обновить";
@@ -865,7 +1064,7 @@ function renderLog() {
   } else {
     L.innerHTML = list.map(x => {
       const G = grade(x.total, x.violCount > 0);
-      return `<button type="button" class="row" data-check="${esc(x.id)}"><span class="grow"><b>${esc(x.name)}</b>${x.violCount ? ' <span class="pill bad">⚠ нарушение</span>' : ""}<small>${esc(x.date)} в ${esc(x.time)} · ${esc(x.role)} · админ ${esc(x.admin)}</small>${x.pending ? '<small class="warn">ждёт отправки</small>' : ""}</span><span class="pill ${G.c === "bad" && x.violCount ? "crit" : G.c}">${G.p}</span><span class="val ${lvlScore(x.total)}" style="min-width:30px;text-align:right">${x.total}</span><span class="chev">›</span></button>`;
+      return `<button type="button" class="row" data-check="${esc(x.id)}"><span class="grow"><b>${esc(x.name)}</b>${x.violCount ? ' <span class="pill bad">⚠ нарушение</span>' : ""}<small>${esc(x.date)} в ${esc(x.time)} · ${esc(x.role)}</small>${x.pending ? '<small class="warn">ждёт отправки</small>' : ""}</span><span class="pill ${G.c === "bad" && x.violCount ? "crit" : G.c}">${G.p}</span><span class="val ${lvlScore(x.total)}" style="min-width:30px;text-align:right">${x.total}</span><span class="chev">›</span></button>`;
     }).join("");
   }
   $("moreBtn").hidden = q !== "" || journalItems.length >= checksTotal || !journalItems.length;
@@ -895,9 +1094,10 @@ function renderCheck(c) {
   const blocks = [["Знание меню", c.pMenu, CFG.menuPoints], ["Ротация столов", c.pRot, CFG.rotPoints]].concat(CFG.service.map(([k, l, m]) => [l, c.svc[k], m]));
   $("checkBox").innerHTML = `
     <div class="result"><div class="big ${G.c}">${c.total}<i> / 100</i></div><p class="verdict">${G.t}</p>
-      <div class="who"><b style="color:var(--fg)">${esc(c.name)}</b> · ${esc(c.role)}<br>${esc(c.date)} в ${esc(c.time)} · Админ: ${esc(c.admin)}</div>
+      <div class="who"><b style="color:var(--fg)">${esc(c.name)}</b> · ${esc(c.role)}<br>${esc(c.date)} в ${esc(c.time)}${c.dur != null ? " · длилась " + (c.dur < 1 ? "меньше минуты" : c.dur + " мин") : ""}</div>
       ${c.pending ? `<div class="lock wait">${lockIcon()}Ждёт отправки</div>` : `<div class="lock">${c.attempt ? "Проверка №" + c.attempt : "Проверка"}${c.delta != null ? " · " + (c.delta > 0 ? "+" : c.delta < 0 ? "−" : "±") + Math.abs(c.delta) + " к прошлой" : " · первая"}</div>`}
     </div>
+    ${aiAfter(c.plan)}
     ${viol.length ? `<div class="alert"><b>Нарушения:</b> ${esc(viol.join(", "))}</div>` : ""}
     <div class="group-label">Из чего итог · ${c.total} из 100</div>
     <div class="group">${blocks.map(([l, v, m]) => scoreRow(l, v, m)).join("")}</div>
@@ -911,7 +1111,7 @@ function renderCheck(c) {
 }
 
 /* ---------- аналитика ---------- */
-const STATS_TITLES = { dash: "Сводка", staff: "Официанты", matrix: "Матрица навыков", crit: "Критерии", trend: "Динамика", admins: "Администраторы", viol: "Нарушения" };
+const STATS_TITLES = { dash: "Сводка", staff: "Официанты", matrix: "Матрица навыков", crit: "Критерии", trend: "Динамика", viol: "Нарушения" };
 async function loadReport() {
   if (reportLoading) return;
   reportLoading = true; renderStats();
@@ -930,6 +1130,7 @@ $("statsChips").addEventListener("click", e => {
   statsTab = b.dataset.st; LS.set(K.tab, statsTab); renderStats(); scrollTo(0, 0);
 });
 function renderStats() {
+  if (!STATS_TITLES[statsTab]) statsTab = "dash"; // раздела «Администраторы» больше нет
   document.querySelectorAll("#statsChips .chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.st === statsTab));
   $("statsTitle").textContent = STATS_TITLES[statsTab] || "Сводка";
   $("statsRefresh").disabled = reportLoading;
@@ -954,6 +1155,7 @@ const VIEW_RENDER = {
     const PR = { 1: ["Срочно", "bad"], 2: ["Важно", "warn"], 3: ["Плановое", "muted"] };
     return sec("Главные цифры") + `<div class="kpis">${R.kpis.map(k => `<div class="kpi"><b class="${/⚠/.test(k[1]) ? "bad" : ""}">${esc(k[1])}</b><span>${esc(k[0])}</span><small>${esc(k[2])}</small></div>`).join("")}</div>`
       + sec("Выводы") + `<div class="ins">${R.insights.map(t => `<p class="${t.charAt(0) === "⚠" ? "alarm" : ""}">${esc(t)}</p>`).join("")}</div>`
+      + ((R.due && R.due.length) || (R.neverChecked && R.neverChecked.length) ? sec("Пора проверить · анализ ИИ") + `<div class="group">${(R.due || []).map(w => `<div class="row"><span class="grow"><b>${esc(w.name)}</b><small>${esc(w.role)} · ${w.late > 0 ? "срок был " + esc(w.next) + ", просрочено на " + daysTxt(w.late) : "срок сегодня"}</small></span><span class="pill ${w.late >= 7 ? "bad" : "warn"}">пора</span></div>`).join("")}${(R.neverChecked || []).map(n => `<div class="row"><span class="grow"><b>${esc(n)}</b><small>ещё не проверяли</small></span><span class="pill ok">первая</span></div>`).join("")}</div>` : "")
       + sec("Что сделать на этой неделе") + (groups.length ? `<div class="cards">${groups.map(g => `<div class="card"><h3>${esc(g.name)}</h3>${g.items.map(a => `<div class="todo"><span class="pill ${PR[a.prio][1]}">${PR[a.prio][0]}</span><div class="what" style="margin-top:6px">${esc(a.what)}</div><div class="how">${esc(a.todo)}</div></div>`).join("")}</div>`).join("")}</div>` : `<div class="empty">Срочных задач нет: команда в порядке.</div>`)
       + sec("Где команда теряет баллы") + `<div class="group">${R.blocks.map(b => `<div class="row"><span class="grow">${esc(b.label)}<small>в среднем ${num1(b.avg)} из ${b.max}${b.potential >= 0.5 ? " · можно вернуть +" + num1(b.potential) : ""}</small>${bar(b.pct)}</span><span class="val ${lvl(b.pct)}">${pctTxt(b.pct)}</span></div>`).join("")}</div>`
       + sec("Слабые места команды") + (() => { const w = R.crit.slice().sort((a, b) => a.now - b.now).filter(x => x.now < 0.9).slice(0, 5); return w.length ? `<div class="group">${w.map(critRow).join("")}</div>` : `<div class="empty">Все пункты выше 90%.</div>`; })()
@@ -983,6 +1185,7 @@ const VIEW_RENDER = {
         ${s.prev != null ? `<div class="kv"><span>Прошлый балл</span><b>${s.prev}</b></div>` : ""}
         ${s.ready ? `<div class="kv"><span>Стажёр → 90+</span><b>${esc(s.ready)}</b></div>` : ""}
       </div>
+      ${s.plan ? `<div class="ai sm"><div class="tag">${SPARK} Анализ ИИ</div><div class="when">${(() => { const w = s.plan.nextDay - todayNum(); return w > 0 ? "Можно проверить с " + esc(s.plan.next) + " · через " + daysTxt(w) : "Пора проверить" + (w < 0 ? ": срок был " + esc(s.plan.next) : ""); })()}</div><div class="why">${esc(s.plan.why)}</div></div>` : ""}
       <div class="rec">${esc(s.rec)}</div>
       <div class="group-label" style="margin-left:0">История</div>
       <div style="font-size:14px">${s.history.slice().reverse().map(h => `<div class="kv"><span>${esc(h.d)}</span><b class="${lvlScore(h.t)}">${h.t}</b></div>`).join("")}</div>
@@ -1024,17 +1227,9 @@ const VIEW_RENDER = {
       + sec("По месяцам") + `<div class="group">${R.months.slice().reverse().map(m => row(m.label, m)).join("")}</div>`
       + sec("По дням недели") + `<div class="group">${R.dows.map(d => `<div class="row"><span class="grow"><b>${esc(d.day)}</b><small>${d.n} ${plural(d.n, ["проверка", "проверки", "проверок"])} · готов ${pctTxt(d.ready)}${d.viol ? " · нарушений " + d.viol : ""}</small>${bar(d.avg / 100)}</span><span class="val ${lvlScore(d.avg)}">${num1(d.avg)}</span></div>`).join("")}</div>`;
   },
-  admins(R) {
-    return `<p class="foot" style="margin:0 0 10px">«На тех же официантах» — насколько админ ставит выше (+) или ниже (−) коллег тем же людям. Самый честный показатель строгости.</p><div class="cards">${R.admins.map(a => `<div class="card">
-      <h3>${esc(a.name)}</h3><div class="sub">${a.n} ${plural(a.n, ["проверка", "проверки", "проверок"])} · последняя ${esc(a.last)}</div>
-      <div class="statgrid"><div><b class="${lvlScore(a.avg)}">${num1(a.avg)}</b><small>средний балл</small></div><div><b>${a.dev == null ? "—" : signed(a.dev)}</b><small>от среднего</small></div><div><b>${a.same == null ? "—" : signed(a.same)}</b><small>на тех же${a.sameN ? " (" + a.sameN + ")" : ""}</small></div>
-      <div><b>${pctTxt(a.ready)}</b><small>«Готов»</small></div><div><b>${pctTxt(a.viol)}</b><small>с нарушениями</small></div><div><b>${a.sd == null ? "—" : num1(a.sd)}</b><small>разброс</small></div></div>
-      ${a.signals.length ? a.signals.map(s => `<div class="alert ${/Мало проверок/.test(s) ? "" : "info"}" style="margin-top:10px;${/Мало проверок/.test(s) ? "background:var(--soft)" : ""}">${esc(s)}</div>`).join("") : `<p class="ok" style="margin-top:10px">Норма</p>`}
-    </div>`).join("")}</div>`;
-  },
   viol(R) {
     return sec("Итого по видам") + `<div class="group">${R.violTypes.map(v => `<div class="row"><span class="grow"><b>${esc(v.label)}</b><small>${v.who ? "У кого: " + esc(v.who) : "Не было"}</small></span><span class="val ${v.total ? "bad" : "ok"}">${v.total}<small style="font-weight:400">за 30 дн.: ${v.in30}</small></span></div>`).join("")}</div>`
-      + sec("Все случаи, новые сверху") + (R.violLog.length ? `<div class="group">${R.violLog.map(x => `<button type="button" class="row" data-check="${esc(x.id)}"><span class="grow"><b>${esc(x.name)}</b><small>${esc(x.date)} · ${esc(x.role)} · админ ${esc(x.admin)}</small><small class="bad">${esc(x.list.join(", "))}</small></span><span class="val ${lvlScore(x.total)}">${x.total}</span></button>`).join("")}</div>` : `<div class="empty">Нарушений не было.</div>`);
+      + sec("Все случаи, новые сверху") + (R.violLog.length ? `<div class="group">${R.violLog.map(x => `<button type="button" class="row" data-check="${esc(x.id)}"><span class="grow"><b>${esc(x.name)}</b><small>${esc(x.date)} · ${esc(x.role)}</small><small class="bad">${esc(x.list.join(", "))}</small></span><span class="val ${lvlScore(x.total)}">${x.total}</span></button>`).join("")}</div>` : `<div class="empty">Нарушений не было.</div>`);
   },
 };
 function critRow(x) {
@@ -1073,7 +1268,7 @@ function spark(h) {
 function loadBoot() {
   return api("login").then(res => {
     needCode = !!res.needCode;
-    admins = res.admins || [];
+    bootAt = Date.now();
     if (res.staff) { staff = res.staff; serverOld = false; }
     else {
       // Старый скрипт: списка сотрудников ещё нет, берём имена из проверок и тех, кого добавили на телефоне.
@@ -1082,7 +1277,7 @@ function loadBoot() {
       staff = (res.names || []).map((n, i) => ({ id: "n" + i, name: n, role: "", active: true, added: "" }))
         .concat(local.filter(l => !(res.names || []).some(n => nameKey(n) === nameKey(l.name))));
     }
-    saveStaff(); fillAdmins(); renderSettings();
+    saveStaff(); renderSettings();
     if (res.cafe) $("cafeTitle").textContent = res.cafe;
     flushQueue();
   }).catch(e => {
@@ -1094,6 +1289,10 @@ function loadBoot() {
     renderSettings();
   });
 }
+// Вернулись в приложение (телефон лежал в кармане): обновить сроки и отправить очередь.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && !booting && Date.now() - bootAt > 60000 && !(needCode && !code)) loadBoot();
+});
 const codeMsg = () => code ? "Код доступа изменился. Введи новый." : "Владелец включил вход по коду. Введи код.";
 function logout(msg) {
   needCode = true;
@@ -1112,8 +1311,8 @@ function tryLogin() {
   code = v;
   api("login").then(res => {
     LS.set(K.code, v); $("code").value = ""; $("codeGroup").classList.remove("invalid");
-    admins = res.admins || []; fillAdmins();
-    if (res.staff) { staff = res.staff; saveStaff(); }
+    bootAt = Date.now();
+    if (res.staff) { staff = res.staff; saveStaff(); renderSettings(); }
     go(S.done ? "result" : "menu");
     flushQueue();
   }).catch(e => {
