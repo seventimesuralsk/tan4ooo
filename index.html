@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#ffffff">
 <style>
-/* Layout: iOS-style single column app on white — optional code screen, 3 steps of input, step 4 reveals the locked result */
+/* Layout: iOS-style admin app on white — bottom tabs (Проверка, Журнал, Аналитика, Настройки), sheets for pickers and dialogs */
 :root{
   --bg:#ffffff; --card:#ffffff; --fg:#1c1c1e; --muted:#6e6e73; --sep:#e5e5ea; --line:#d9d9de; --soft:#f5f5f7;
   --accent:#0a6cff; --accent-soft:rgba(10,108,255,.10);
@@ -28,17 +28,23 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 var(--font);-webkit-font-smoothing:antialiased}
+body.noscroll{overflow:hidden}
 .app{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 [hidden]{display:none!important}
 .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 h1{font:700 34px/1.1 var(--display);letter-spacing:-.02em;margin:2px 0 14px;text-wrap:balance}
+h1.sm{font-size:28px}
 .group-label{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:24px 16px 8px}
 .group{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .row{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:52px;position:relative}
 .row+.row::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--sep)}
 .row .grow{flex:1;min-width:0}
+.row b{font-weight:600}
 .row small{display:block;color:var(--muted);font-size:13px}
+.row .val{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.row .chev{color:#c4c4c7;font-size:20px;line-height:1}
 .foot{font-size:13px;color:var(--muted);margin:8px 16px 0;max-width:60ch}
+.meta{font-size:13px;color:var(--muted);margin:-6px 0 14px}
 .howto{background:var(--soft);border-radius:14px;padding:14px 16px;font-size:15px;display:flex;gap:12px;align-items:flex-start}
 .howto b{display:block;margin-bottom:2px}
 .howto .ic{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
@@ -48,8 +54,12 @@ h1{font:700 34px/1.1 var(--display);letter-spacing:-.02em;margin:2px 0 14px;text
 .steps button.done::before{background:var(--ok)}
 .steps button.cur{color:var(--accent)}
 .steps button.cur::before{background:var(--accent)}
-input[type=text],input[type=password]{font:inherit;color:var(--fg);background:transparent;border:0;outline:0;width:100%;text-align:right;min-width:0}
-input::placeholder{color:var(--muted)}
+input[type=text],input[type=password],input[type=search]{font:inherit;color:var(--fg);background:transparent;border:0;outline:0;width:100%;text-align:right;min-width:0}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+.field{display:block;width:100%;font:inherit;color:var(--fg);background:var(--soft);border:1px solid transparent;border-radius:12px;padding:12px 14px;outline:0}
+.field:focus{border-color:var(--accent);background:var(--card)}
+textarea.field{min-height:84px;resize:vertical}
+input.field{text-align:left}
 .num{font-variant-numeric:tabular-nums;font-weight:600}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:6px 0 0}
 input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p,0%),var(--fill) var(--p,0%))}
@@ -93,9 +103,12 @@ button.row:active{background:var(--fill)}
 .pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--fill);white-space:nowrap}
 .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
 .pill.ok{background:var(--ok-soft)} .pill.warn{background:var(--warn-soft)} .pill.bad{background:var(--bad-soft)}
+.pill.crit{background:var(--bad);color:#fff}
+.pill.muted{color:var(--muted)}
 .btn{display:block;width:100%;font:600 17px var(--font);padding:15px;border:0;border-radius:14px;background:var(--accent);color:#fff;cursor:pointer;margin-top:20px;text-align:center}
 .btn.sec{background:var(--accent-soft);color:var(--accent);margin-top:10px}
 .btn.danger{background:var(--bad)}
+.btn.ghost{background:var(--soft);color:var(--fg)}
 .btn:active{opacity:.75}
 .btn:disabled{opacity:.4}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -108,26 +121,104 @@ button.row:active{background:var(--fill)}
 .invalid{border-color:var(--bad)!important;box-shadow:0 0 0 3px rgba(229,56,59,.15)}
 .empty{padding:28px 16px;text-align:center;color:var(--muted)}
 .linkbtn{background:none;border:0;color:var(--accent);font:inherit;font-size:15px;padding:4px 0;cursor:pointer}
-.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--fg);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:30;max-width:calc(100% - 32px);text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--fg);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:60;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .login{padding-top:10vh;text-align:center}
 .logo{width:76px;height:76px;border-radius:20px;background:var(--fg);color:#fff;display:grid;place-items:center;font:700 42px/1 var(--display);margin:0 auto 18px}
 .login .sub{color:var(--muted);margin:0 auto 24px;max-width:32ch}
 .login .row input{text-align:left;font-size:22px;letter-spacing:.2em}
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.head>div{flex:1;min-width:0}
+.refresh{flex:none;margin-top:4px;background:var(--soft);border:0;border-radius:100px;padding:8px 14px;font:600 14px var(--font);color:var(--accent);cursor:pointer}
+.refresh:disabled{opacity:.5}
+.searchbox{display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.searchbox input{text-align:left}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px;margin-bottom:12px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:100px;padding:8px 14px;font:500 14px var(--font);color:var(--fg);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--fg);border-color:var(--fg);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+.kpi b{display:block;font:700 21px/1.2 var(--display);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi span{display:block;font-size:13px;margin-top:2px}
+.kpi small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.bar{display:block;height:6px;border-radius:3px;background:var(--fill);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--ok)}
+.bar.warn i{background:var(--warn)} .bar.bad i{background:var(--bad)}
+.ins{display:flex;flex-direction:column;gap:8px}
+.ins p{margin:0;padding:12px 14px;border-radius:14px;background:var(--soft);font-size:15px}
+.ins p.alarm{background:var(--bad-soft);color:#8e1d1f}
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-width:0}
+.card h3{font:600 17px var(--display);margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card p{margin:6px 0 0;font-size:15px}
+.card .sub{color:var(--muted);font-size:13px;margin-top:2px}
+.todo{margin-top:10px;padding-top:10px;border-top:1px solid var(--sep)}
+.todo .what{font-size:15px}
+.todo .how{font-size:14px;color:var(--muted);margin-top:2px}
+.score{font:700 24px/1 var(--display);font-variant-numeric:tabular-nums}
+.statgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.statgrid div{background:var(--soft);border-radius:10px;padding:8px 10px;min-width:0}
+.statgrid b{display:block;font-variant-numeric:tabular-nums;font-size:16px}
+.statgrid small{display:block;color:var(--muted);font-size:12px}
+details.card summary{list-style:none;cursor:pointer}
+details.card summary::-webkit-details-marker{display:none}
+details.card[open] summary .chev{transform:rotate(90deg)}
+.chev{transition:.2s;display:inline-block}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:6px 0;border-top:1px solid var(--sep)}
+.kv:first-child{border-top:0}
+.kv span{color:var(--muted)}
+.kv b{font-weight:600;text-align:right}
+.rec{margin-top:10px;background:var(--accent-soft);border-radius:12px;padding:10px 12px;font-size:14px}
+.matrix-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table.mx{border-collapse:separate;border-spacing:0;font-size:13px;font-variant-numeric:tabular-nums}
+table.mx th,table.mx td{padding:7px 4px;text-align:center;border-bottom:1px solid var(--sep);min-width:36px;white-space:nowrap}
+table.mx th{font-size:12px;color:var(--muted);font-weight:600}
+table.mx .nm{position:sticky;left:0;background:var(--card);text-align:left;min-width:118px;max-width:140px;padding-left:12px;white-space:normal;z-index:1;border-right:1px solid var(--sep)}
+table.mx tr:last-child td{border-bottom:0}
+table.mx tr.team td{font-weight:700}
+table.mx td.sep,table.mx th.sep{border-left:2px solid var(--line)}
+.c-ok{background:var(--ok-soft);color:#1a7f44}
+.c-warn{background:var(--warn-soft);color:#9a5b00}
+.c-bad{background:var(--bad-soft);color:#b42324}
+.legend{columns:2;column-gap:16px;font-size:12px;color:var(--muted);margin:10px 4px 0}
+.legend div{break-inside:avoid;margin-bottom:4px}
+.chart{width:100%;height:auto;display:block}
+.chart .grid{stroke:var(--sep);stroke-width:1}
+.chart .g90{stroke:var(--ok);stroke-dasharray:4 4;stroke-width:1}
+.chart .g75{stroke:var(--warn);stroke-dasharray:4 4;stroke-width:1}
+.chart .line{stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.chart .dot{fill:var(--accent)}
+.chart .area{fill:var(--accent-soft)}
+.chart text{fill:var(--muted);font:10px var(--font)}
+.spark{display:block;width:100%;height:36px;margin-top:8px}
+.spark .line{stroke:var(--accent);fill:none;stroke-width:2;stroke-linejoin:round}
+.spark .dot{fill:var(--accent)}
+.spark .g90{stroke:var(--ok);stroke-dasharray:3 3;stroke-width:1}
+.radio{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
+.radio input{width:22px;height:22px;accent-color:var(--accent);margin:0}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:40}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--card);border-radius:18px 18px 0 0;max-height:90vh;overflow:auto;padding:8px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-shadow:0 -8px 30px rgba(0,0,0,.12)}
+.sheet .in{max-width:560px;margin:0 auto}
+.sheet .grab{width:36px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 14px}
+.sheet h2{font:600 20px var(--display);margin:0 0 4px}
+.sheet .note{color:var(--muted);font-size:14px;margin:0 0 14px}
+.sheet .head{align-items:center;margin-bottom:12px}
+.sheet .close{background:var(--soft);border:0;border-radius:100px;padding:8px 14px;font:600 14px var(--font);color:var(--fg);cursor:pointer}
+.actions .btn{margin-top:10px}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--sep);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
 nav .in{max-width:560px;margin:0 auto;display:flex}
 nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font:500 10.5px var(--font);color:var(--muted);background:none;border:0;padding:4px 0;min-width:0;cursor:pointer}
 nav svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 nav button[aria-current=page]{color:var(--accent)}
-nav button.off{opacity:.35}
-@media (prefers-reduced-motion:no-preference){section:not([hidden]){animation:in .28s ease}@keyframes in{from{opacity:0;transform:translateY(6px)}}}
+@media (prefers-reduced-motion:no-preference){section:not([hidden]){animation:in .25s ease}@keyframes in{from{opacity:0;transform:translateY(6px)}}}
 </style>
 </head>
 <body>
 
 <div class="app">
 
-<!-- ВХОД -->
+<!-- ВХОД ПО КОДУ (только если владелец включил код) -->
 <section id="v-login" hidden>
   <div class="login">
     <div class="logo">7</div>
@@ -145,17 +236,17 @@ nav button.off{opacity:.35}
 <section id="v-menu" hidden>
   <div class="eyebrow">Шаг 1 из 4</div>
   <h1>Экзамен по меню</h1>
-  <div class="howto"><span class="ic">?</span><div><b>Как заполнить</b>Выбери, кто проходит проверку, впиши имя официанта и своё. Задай вопросы по каждому пункту и поставь балл кнопками − и +.</div></div>
+  <div class="howto"><span class="ic">?</span><div><b>Как заполнить</b>Выбери официанта из списка и впиши своё имя. Задай вопросы по каждому пункту и поставь балл кнопками − и +.</div></div>
   <div class="group-label">Кто проходит проверку <span class="req">*</span><span class="req-note">обязательно</span></div>
   <div class="seg" id="roleSeg" role="group" aria-label="Кто проходит проверку">
     <button type="button" data-v="intern">Стажёр<small>первая проверка</small></button>
     <button type="button" data-v="exp">Опытный<small>уже работает</small></button>
   </div>
-  <div class="group-label">Официант <span class="req">*</span><span class="req-note">имя обязательно</span></div>
-  <div class="group" id="nameGroup"><label class="row"><span>Имя</span><input id="name" type="text" list="namesList" placeholder="Имя сотрудника" autocomplete="off"></label></div>
+  <div class="group-label">Официант <span class="req">*</span><span class="req-note">выбери из списка</span></div>
+  <div class="group" id="nameGroup"><button type="button" class="row" id="pickBtn"><span>Официант</span><span class="grow" id="pickVal" style="text-align:right;color:var(--muted)">Выбрать из списка</span><span class="chev">›</span></button></div>
   <div class="group-label">Проверяет <span class="req">*</span><span class="req-note">запомнится на этом телефоне</span></div>
   <div class="group" id="adminGroup"><label class="row"><span>Админ</span><input id="admin" type="text" list="adminsList" placeholder="Твоё имя" autocomplete="off"></label></div>
-  <datalist id="namesList"></datalist><datalist id="adminsList"></datalist>
+  <datalist id="adminsList"></datalist>
   <div class="group-label">Оценочный лист</div>
   <div class="group" id="menuList"></div>
   <div id="req1"></div>
@@ -176,7 +267,7 @@ nav button.off{opacity:.35}
 <section id="v-service" hidden>
   <div class="eyebrow">Шаг 3 из 4</div>
   <h1>Сервис и нарушения</h1>
-  <div class="howto"><span class="ic">?</span><div><b>Как заполнить</b>Оцени три пункта. Ниже отметь нарушения, если они были. Потом нажми «Завершить проверку»: после этого изменить ничего нельзя, проверка сама уйдёт в Google Таблицу.</div></div>
+  <div class="howto"><span class="ic">?</span><div><b>Как заполнить</b>Оцени три пункта. Ниже отметь нарушения, если они были. Потом нажми «Завершить проверку»: после этого изменить ничего нельзя, проверка сама уйдёт в журнал.</div></div>
   <div class="group-label">Оценка работы</div>
   <div class="group" id="svcList"></div>
   <div class="group-label">Были ли нарушения? Включи, если да</div>
@@ -195,28 +286,115 @@ nav button.off{opacity:.35}
 
 <!-- ЖУРНАЛ -->
 <section id="v-log" hidden>
-  <div class="eyebrow" id="logEyebrow">Seven Times</div>
-  <h1>Журнал</h1>
+  <div class="head"><div><div class="eyebrow">Все проверки</div><h1>Журнал</h1></div><button class="refresh" type="button" id="logRefresh">Обновить</button></div>
+  <div class="searchbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="logSearch" type="search" placeholder="Поиск: официант или админ" autocomplete="off"></div>
   <div id="queueBox"></div>
-  <div class="group" id="logList"><div class="empty">Загружаю журнал…</div></div>
-  <p class="foot">Последние 40 проверок из Google Таблицы. Изменить или удалить их из приложения нельзя. <button class="linkbtn" type="button" id="reloadBtn">Обновить</button></p>
+  <div class="meta" id="logMeta"></div>
+  <div class="group" id="logList"></div>
+  <button class="btn sec" type="button" id="moreBtn" hidden>Показать ещё</button>
+</section>
+
+<!-- ОДНА ПРОВЕРКА ПОДРОБНО -->
+<section id="v-check" hidden>
+  <button class="linkbtn" type="button" id="checkBack" style="font-size:17px;margin-bottom:8px">‹ Журнал</button>
+  <div id="checkBox"></div>
+</section>
+
+<!-- АНАЛИТИКА -->
+<section id="v-stats" hidden>
+  <div class="head"><div><div class="eyebrow">Аналитика</div><h1 class="sm" id="statsTitle">Сводка</h1></div><button class="refresh" type="button" id="statsRefresh">Обновить</button></div>
+  <div class="meta" id="statsMeta"></div>
+  <div class="chips" id="statsChips" role="group" aria-label="Разделы аналитики">
+    <button type="button" class="chip" data-st="dash">Сводка</button>
+    <button type="button" class="chip" data-st="staff">Официанты</button>
+    <button type="button" class="chip" data-st="matrix">Матрица навыков</button>
+    <button type="button" class="chip" data-st="crit">Критерии</button>
+    <button type="button" class="chip" data-st="trend">Динамика</button>
+    <button type="button" class="chip" data-st="admins">Администраторы</button>
+    <button type="button" class="chip" data-st="viol">Нарушения</button>
+  </div>
+  <div id="statsBox"></div>
+</section>
+
+<!-- НАСТРОЙКИ -->
+<section id="v-settings" hidden>
+  <div class="eyebrow">Настройки</div>
+  <h1>Сотрудники</h1>
+  <div class="group-label">Добавить сотрудника</div>
+  <div class="card">
+    <input class="field" id="setName" type="text" placeholder="Имя и фамилия" autocomplete="off">
+    <div class="seg" id="setRoleSeg" role="group" aria-label="Статус нового сотрудника" style="margin-top:10px">
+      <button type="button" data-v="intern">Стажёр</button>
+      <button type="button" data-v="exp">Опытный</button>
+    </div>
+    <div id="setErr"></div>
+    <button class="btn" type="button" id="setAddBtn" style="margin-top:12px">Добавить</button>
+  </div>
+  <div class="group-label" id="activeLabel">В штате</div>
+  <div class="group" id="staffActive"></div>
+  <p class="foot">Нажми на сотрудника, чтобы сменить статус или удалить.</p>
+  <div class="group-label" id="removedLabel">Удалённые</div>
+  <div class="group" id="staffRemoved"></div>
   <p class="foot" id="logoutRow"><button class="linkbtn" type="button" id="logoutBtn">Выйти на этом телефоне</button></p>
 </section>
 
 </div>
 
+<!-- ВЫБОР ОФИЦИАНТА -->
+<div class="sheet-bg" id="sheetBg" hidden></div>
+<div class="sheet" id="picker" hidden role="dialog" aria-label="Выбор официанта"><div class="in">
+  <div class="grab"></div>
+  <div class="head"><h2>Кого проверяем</h2><button class="close" type="button" data-close>Готово</button></div>
+  <div class="searchbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="pickSearch" type="search" placeholder="Поиск по имени" autocomplete="off"></div>
+  <div class="group" id="pickList"></div>
+  <button class="btn sec" type="button" id="pickAddToggle">+ Добавить нового сотрудника</button>
+  <div id="pickAdd" hidden style="margin-top:12px">
+    <input class="field" id="pickNewName" type="text" placeholder="Имя и фамилия" autocomplete="off">
+    <div class="seg" id="pickRoleSeg" role="group" aria-label="Статус" style="margin-top:10px">
+      <button type="button" data-v="intern">Стажёр</button>
+      <button type="button" data-v="exp">Опытный</button>
+    </div>
+    <div id="pickErr"></div>
+    <button class="btn" type="button" id="pickAddBtn" style="margin-top:12px">Добавить и выбрать</button>
+  </div>
+</div></div>
+
+<!-- ДЕЙСТВИЯ С СОТРУДНИКОМ -->
+<div class="sheet" id="actionSheet" hidden role="dialog" aria-label="Действия с сотрудником"><div class="in actions">
+  <div class="grab"></div>
+  <h2 id="actTitle"></h2>
+  <p class="note" id="actNote"></p>
+  <button class="btn sec" type="button" id="actRole"></button>
+  <button class="btn danger" type="button" id="actRemove">Удалить из штата</button>
+  <button class="btn ghost" type="button" data-close>Отмена</button>
+</div></div>
+
+<!-- УДАЛЕНИЕ С ПРИЧИНОЙ -->
+<div class="sheet" id="removeSheet" hidden role="dialog" aria-label="Удаление сотрудника"><div class="in">
+  <div class="grab"></div>
+  <h2 id="rmTitle"></h2>
+  <p class="note">Причина обязательна. Проверки сотрудника останутся в журнале и аналитике.</p>
+  <div class="group">
+    <label class="radio"><input type="radio" name="rmReason" value="fired"><span>Уволен</span></label>
+    <label class="radio" style="border-top:1px solid var(--sep)"><input type="radio" name="rmReason" value="own"><span>Своими словами</span></label>
+  </div>
+  <textarea class="field" id="rmText" placeholder="Например: ушёл по собственному желанию" hidden style="margin-top:10px"></textarea>
+  <div id="rmErr"></div>
+  <button class="btn danger" type="button" id="rmConfirm">Удалить</button>
+  <button class="btn ghost" type="button" data-close>Отмена</button>
+</div></div>
+
 <div class="toast" id="toast" role="status"></div>
 
 <nav id="nav"><div class="in">
-  <button type="button" data-go="menu" data-t="menu"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>1. Меню</button>
-  <button type="button" data-go="rotation" data-t="rotation"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/></svg>2. Ротация</button>
-  <button type="button" data-go="service" data-t="service"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>3. Сервис</button>
-  <button type="button" data-go="result" data-t="result"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>4. Итог</button>
-  <button type="button" data-go="log" data-t="log"><svg viewBox="0 0 24 24"><path d="M6 4h12v16l-6-4-6 4z"/></svg>Журнал</button>
+  <button type="button" data-tab="check"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4.5h6M9 11l2 2 4-4M9 17h6"/></svg>Проверка</button>
+  <button type="button" data-tab="log"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Журнал</button>
+  <button type="button" data-tab="stats"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Аналитика</button>
+  <button type="button" data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M17 11h4M19 9v4"/></svg>Настройки</button>
 </div></nav>
 
 <script>
-const CFG = {"cafe":"Seven Times","menu":[["Состав блюд и ингредиенты",20],["Выход блюд и размер порций",10],["Цены меню",15],["Вкус и особенности блюд",15],["Аллергены и ограничения",15],["Напитки, добавки, стоп-лист",10],["Рекомендации гостю",15]],"rotation":["Знает закреплённые номера столов","Своевременно замечает новых гостей","Принимает заказ без неоправданной задержки","Контролирует время приготовления и подачи","Возвращается к гостям проверить обслуживание","Не оставляет столы без внимания","Правильно передаёт стол другому официанту","Быстро убирает и готовит стол после гостей","Сообщает администратору о проблемах","Берёт новые столы строго по очереди"],"service":[["comm","Общение с гостями",20],["speed","Скорость и точность",15],["look","Внешний вид и дисциплина",10]],"violations":[["allergen","Ошибка по аллергенам"],["safety","Нарушение безопасности продуктов"],["rude","Грубость с гостем"]],"roles":{"intern":"Стажёр","exp":"Опытный"},"menuPoints":30,"rotPoints":25,"needCode":false};
+const CFG = {"cafe":"Seven Times","menu":[["Состав блюд и ингредиенты",20],["Выход блюд и размер порций",10],["Цены меню",15],["Вкус и особенности блюд",15],["Аллергены и ограничения",15],["Напитки, добавки, стоп-лист",10],["Рекомендации гостю",15]],"rotation":["Знает закреплённые номера столов","Своевременно замечает новых гостей","Принимает заказ без неоправданной задержки","Контролирует время приготовления и подачи","Возвращается к гостям проверить обслуживание","Не оставляет столы без внимания","Правильно передаёт стол другому официанту","Быстро убирает и готовит стол после гостей","Сообщает администратору о проблемах","Берёт новые столы строго по очереди"],"service":[["comm","Общение с гостями",20],["speed","Скорость и точность",15],["look","Внешний вид и дисциплина",10]],"violations":[["allergen","Ошибка по аллергенам"],["safety","Нарушение безопасности продуктов"],["rude","Грубость с гостем"]],"roles":{"intern":"Стажёр","exp":"Опытный"},"menuPoints":30,"rotPoints":25};
 // Скрипт Google, который принимает проверки и пишет их в таблицу.
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyVpJ3Vr8RG7Y-tK7qLIIYb_lnaqm4rlNYTTaQJ9TyqG4lGmEYgXSslVyBbFdyP-o1cjw/exec";
 
@@ -227,9 +405,26 @@ const LS = {
   set(k, v){ try { localStorage.setItem(k, v); } catch(e) {} },
   del(k){ try { localStorage.removeItem(k); } catch(e) {} }
 };
-const K_CHECK = "st7-check", K_CODE = "st7-code", K_ADMIN = "st7-admin", K_QUEUE = "st7-queue";
+const LSjson = (k, def) => { try { const v = JSON.parse(LS.get(k) || "null"); return v == null ? def : v; } catch(e) { return def; } };
+const K = { check: "st7-check", code: "st7-code", admin: "st7-admin", queue: "st7-queue", staff: "st7-staff", report: "st7-report", checks: "st7-checks", tab: "st7-stats-tab" };
 const CHECK = '<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>';
+const TICK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a6cff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
 const MENU_MAX = CFG.menu.reduce((s, m) => s + m[1], 0);
+const ROLE_KEY = { "Стажёр": "intern", "Опытный": "exp" };
+const OLD_SCRIPT = "Чтобы это работало, обнови скрипт Google: вставь новый Code.gs и сделай «Новая версия» в «Управлении развертываниями».";
+
+/* ---------- форматирование ---------- */
+const num1 = x => (x == null || !isFinite(x)) ? "—" : String(Math.round(x * 10) / 10).replace(".", ",");
+const pctTxt = x => (x == null || !isFinite(x)) ? "—" : Math.round(x * 100) + "%";
+const lvl = p => p == null ? "" : p >= 0.9 ? "ok" : p >= 0.75 ? "warn" : "bad";
+const lvlScore = t => t == null ? "" : t >= 90 ? "ok" : t >= 75 ? "warn" : "bad";
+const bar = p => `<span class="bar ${lvl(p)}"><i style="width:${Math.max(0, Math.min(1, p || 0)) * 100}%"></i></span>`;
+const verdictCls = v => ({ "Готов": "ok", "Дообучение": "warn", "Не готов": "bad", "Критично": "crit" })[v] || "muted";
+const signed = x => x == null ? "" : (x > 0 ? "+" : x < 0 ? "−" : "±") + num1(Math.abs(x));
+const plural = (n, f) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? f[2] : b > 1 && b < 5 ? f[1] : b === 1 ? f[0] : f[2]; };
+const normName = s => String(s || "").replace(/\s+/g, " ").trim().toLowerCase().replace(/(^|[\s-])([^\s-])/g, (m, a, b) => a + b.toUpperCase());
+const nameKey = s => normName(s).toLowerCase().replace(/ё/g, "е");
+const pad = n => (n < 10 ? "0" : "") + n;
 
 /* ---------- состояние ---------- */
 const newId = () => "ST-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -239,31 +434,35 @@ const fresh = () => ({
   svc: Object.fromEntries(CFG.service.map(s => [s[0], 0])), viol: {}, done: null
 });
 let S = fresh();
-try {
-  const d = JSON.parse(LS.get(K_CHECK) || "null");
+(() => {
+  const d = LSjson(K.check, null);
   if (d && d.id && d.menu && d.menu.length === CFG.menu.length && d.rot && d.rot.length === CFG.rotation.length) S = Object.assign(fresh(), d);
-} catch(e) {}
-let code = LS.get(K_CODE) || "";
-let needCode = !!CFG.needCode; // по умолчанию вход без кода; владелец может включить код в меню таблицы
-let adminName = LS.get(K_ADMIN) || "";
-let queue = [];
-try { queue = JSON.parse(LS.get(K_QUEUE) || "[]") || []; } catch(e) { queue = []; }
-let journal = null, names = [], admins = [], sending = false, lastError = "";
-const saveLocal = () => LS.set(K_CHECK, JSON.stringify(S));
-const saveQueue = () => LS.set(K_QUEUE, JSON.stringify(queue));
+})();
+let code = LS.get(K.code) || "";
+let needCode = false;
+let adminName = LS.get(K.admin) || "";
+let queue = LSjson(K.queue, []);
+let staff = LSjson(K.staff, []);
+let admins = [];
+let report = LSjson(K.report, null);
+let checksCache = LSjson(K.checks, { items: [], total: 0 });
+let journalItems = checksCache.items || [];
+let checksTotal = checksCache.total || 0;
+let statsTab = LS.get(K.tab) || "dash";
+let view = "menu", lastStep = "menu";
+let sending = false, lastError = "", serverOld = false;
+let checksLoading = false, checksAt = 0, logError = "";
+let reportLoading = false, reportAt = 0, statsError = "";
+const saveLocal = () => LS.set(K.check, JSON.stringify(S));
+const saveQueue = () => LS.set(K.queue, JSON.stringify(queue));
+const saveStaff = () => LS.set(K.staff, JSON.stringify(staff));
+const activeStaff = () => staff.filter(e => e.active).slice().sort((a, b) => a.name.localeCompare(b.name, "ru"));
 
-/* ---------- связь с Google ---------- */
-// На сайте GitHub задан SCRIPT_URL: запросы идут через fetch на скрипт Google.
-// Если страницу отдаёт сам Google, работает google.script.run.
+/* ---------- связь со скриптом Google (адрес SCRIPT_URL вшит в страницу) ---------- */
 const API_URL = typeof SCRIPT_URL === "string" ? SCRIPT_URL : "";
 async function api(action, data) {
+  if (!API_URL) throw new Error("Не задан адрес скрипта");
   const body = Object.assign({ action, code }, data || {});
-  if (!API_URL) {
-    if (!window.google || !google.script || !google.script.run) throw new Error("Нет связи с Google");
-    const fn = { login: "login", save: "saveCheck", refresh: "refreshAnalytics" }[action];
-    const args = action === "save" ? [body.payload, code] : [code];
-    return new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args));
-  }
   let res;
   try {
     res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) });
@@ -274,22 +473,28 @@ async function api(action, data) {
   try { out = JSON.parse(await res.text()); } catch (e) {
     const err = new Error("Сервер ответил с ошибкой. Попробуй ещё раз."); err.badResponse = true; throw err;
   }
-  if (!out || out.ok === false) throw new Error((out && out.error) || "Ошибка сервера");
+  if (!out || out.ok === false) {
+    const err = new Error((out && out.error) || "Ошибка сервера");
+    if (/Неизвестное действие/.test(err.message)) err.oldScript = true;
+    throw err;
+  }
   return out;
 }
-const untouched = () => !S.role && !S.name.trim() && S.menu.every(v => !v) && !S.rot.some(Boolean);
 const errText = e => String((e && e.message) || e || "Ошибка").replace(/^(Exception|Error|ScriptError):\s*/i, "");
 const isCodeError = m => /код доступа/i.test(m);
+const failText = e => (e && e.oldScript) ? OLD_SCRIPT : errText(e);
 
 /* ---------- расчёт (та же формула, что в таблице) ---------- */
-function calc() {
-  const menuTotal = S.menu.reduce((a, b) => a + b, 0);
-  const rotDone = S.rot.filter(Boolean).length;
+function calcOf(menu, rot, svcObj, violObj) {
+  const menuTotal = menu.reduce((a, b) => a + b, 0);
+  const rotDone = rot.filter(Boolean).length;
   const pMenu = Math.round(menuTotal * CFG.menuPoints / MENU_MAX);
   const pRot = Math.round(rotDone * CFG.rotPoints / CFG.rotation.length);
-  const svc = CFG.service.reduce((s, x) => s + S.svc[x[0]], 0);
-  return { total: pMenu + pRot + svc, viol: CFG.violations.filter(v => S.viol[v[0]]).map(v => v[1]) };
+  const svc = CFG.service.reduce((s, x) => s + (svcObj[x[0]] || 0), 0);
+  const viol = CFG.violations.filter(v => violObj[v[0]]).map(v => v[1]);
+  return { menuTotal, rotDone, pMenu, pRot, total: pMenu + pRot + svc, viol };
 }
+const calc = () => calcOf(S.menu, S.rot, S.svc, S.viol);
 function grade(v, crit) {
   if (crit) return { t: "Нужна немедленная реакция", c: "bad", p: "Критично" };
   if (v >= 90) return { t: "Готов к самостоятельной работе", c: "ok", p: "Готов" };
@@ -297,7 +502,7 @@ function grade(v, crit) {
   return { t: "Не готов: обучение и повторная проверка", c: "bad", p: "Не готов" };
 }
 
-/* ---------- построение формы ---------- */
+/* ---------- форма проверки ---------- */
 function sliderRow(id, label, max, val) {
   return `<div class="row slider-row"><div class="top"><span class="grow">${esc(label)}<small>максимум ${max}</small></span><span class="stepper"><button type="button" data-d="-1" aria-label="Минус">−</button><span class="num"><span id="${id}-v">${val}</span> <i>/ ${max}</i></span><button type="button" data-d="1" aria-label="Плюс">+</button></span></div><input type="range" id="${id}" min="0" max="${max}" value="${val}" style="--p:${val / max * 100}%" aria-label="${esc(label)}"></div>`;
 }
@@ -312,10 +517,17 @@ function bindSlider(id, max, set) {
   el.addEventListener("input", () => apply(+el.value));
   el.closest(".row").querySelectorAll("[data-d]").forEach(b => b.addEventListener("click", () => apply(+el.value + +b.dataset.d)));
 }
-function build() {
-  $("name").value = S.name;
-  $("admin").value = adminName;
+function renderRole() {
   document.querySelectorAll("#roleSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === S.role));
+}
+function renderPickVal() {
+  $("pickVal").textContent = S.name || "Выбрать из списка";
+  $("pickVal").style.color = S.name ? "var(--fg)" : "var(--muted)";
+  $("pickVal").style.fontWeight = S.name ? "600" : "400";
+}
+function build() {
+  $("admin").value = adminName;
+  renderRole(); renderPickVal();
   $("menuList").innerHTML = CFG.menu.map(([q, m], i) => sliderRow("m" + i, q, m, S.menu[i])).join("");
   CFG.menu.forEach(([, m], i) => bindSlider("m" + i, m, v => S.menu[i] = v));
   $("rotList").innerHTML = CFG.rotation.map((q, i) => `<button type="button" class="row${S.rot[i] ? " on" : ""}" data-i="${i}" aria-pressed="${S.rot[i]}">${CHECK}<span class="grow">${esc(q)}</span></button>`).join("");
@@ -330,8 +542,7 @@ function build() {
   $("finishBtn").textContent = "Завершить проверку";
   renderResult();
 }
-function fillLists() {
-  $("namesList").innerHTML = names.map(n => `<option value="${esc(n)}"></option>`).join("");
+function fillAdmins() {
   $("adminsList").innerHTML = admins.map(n => `<option value="${esc(n)}"></option>`).join("");
 }
 
@@ -339,7 +550,7 @@ function fillLists() {
 const missing1 = () => {
   const m = [];
   if (!S.role) m.push("кто проходит проверку");
-  if (!S.name.trim()) m.push("имя официанта");
+  if (!S.name.trim()) m.push("официант");
   if (!adminName.trim()) m.push("кто проверяет");
   return m;
 };
@@ -356,12 +567,9 @@ function clearReq() { if ($("req1").innerHTML) showReq(); }
 $("next1").addEventListener("click", () => { if (showReq()) go("rotation"); else scrollTo({ top: 0, behavior: "smooth" }); });
 $("roleSeg").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || S.done) return;
-  S.role = b.dataset.v;
-  document.querySelectorAll("#roleSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
-  saveLocal(); clearReq();
+  S.role = b.dataset.v; renderRole(); saveLocal(); clearReq();
 });
-$("name").addEventListener("input", e => { if (S.done) return; S.name = e.target.value; saveLocal(); clearReq(); });
-$("admin").addEventListener("input", e => { adminName = e.target.value; LS.set(K_ADMIN, adminName.trim()); clearReq(); });
+$("admin").addEventListener("input", e => { adminName = e.target.value; LS.set(K.admin, adminName.trim()); clearReq(); });
 $("rotList").addEventListener("click", e => {
   const b = e.target.closest("[data-i]"); if (!b || S.done) return;
   const i = +b.dataset.i; S.rot[i] = !S.rot[i];
@@ -370,8 +578,162 @@ $("rotList").addEventListener("click", e => {
 
 function toast(t) {
   const el = $("toast"); el.textContent = t; el.classList.add("show");
-  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 2600);
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 2800);
 }
+
+/* ---------- выбор официанта из списка ---------- */
+function setSeg(id, v) { document.querySelectorAll("#" + id + " button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v)); }
+function segVal(id) { const b = document.querySelector("#" + id + " button[aria-pressed=true]"); return b ? b.dataset.v : ""; }
+function openSheet(id) {
+  closeSheets(true);
+  $("sheetBg").hidden = false; $(id).hidden = false; document.body.classList.add("noscroll");
+}
+function closeSheets(silent) {
+  ["picker", "actionSheet", "removeSheet"].forEach(x => $(x).hidden = true);
+  $("sheetBg").hidden = true; document.body.classList.remove("noscroll");
+}
+$("sheetBg").addEventListener("click", () => closeSheets());
+document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => closeSheets()));
+
+$("pickBtn").addEventListener("click", () => {
+  if (S.done) return;
+  $("pickSearch").value = ""; $("pickErr").innerHTML = "";
+  $("pickAdd").hidden = activeStaff().length > 0;
+  $("pickAddToggle").hidden = activeStaff().length === 0;
+  setSeg("pickRoleSeg", S.role || "");
+  renderPicker(); openSheet("picker");
+});
+function renderPicker() {
+  const q = nameKey($("pickSearch").value);
+  const list = activeStaff().filter(e => !q || nameKey(e.name).includes(q));
+  $("pickList").innerHTML = list.length
+    ? list.map(e => `<button type="button" class="row" data-pick="${esc(e.id)}"><span class="grow"><b>${esc(e.name)}</b><small>${esc(e.role || "статус не указан")}</small></span>${nameKey(e.name) === nameKey(S.name) ? TICK : ""}</button>`).join("")
+    : `<div class="empty">${activeStaff().length ? "Никого не нашёл. Добавь нового ниже." : "Список сотрудников пуст. Добавь первого ниже."}</div>`;
+}
+$("pickSearch").addEventListener("input", renderPicker);
+$("pickList").addEventListener("click", e => {
+  const b = e.target.closest("[data-pick]"); if (!b) return;
+  const p = staff.find(x => x.id === b.dataset.pick); if (p) selectWaiter(p);
+});
+function selectWaiter(p) {
+  S.name = p.name;
+  if (ROLE_KEY[p.role]) S.role = ROLE_KEY[p.role];
+  saveLocal(); renderRole(); renderPickVal(); clearReq(); closeSheets();
+}
+$("pickAddToggle").addEventListener("click", () => { $("pickAdd").hidden = false; $("pickAddToggle").hidden = true; $("pickNewName").value = $("pickSearch").value; });
+$("pickRoleSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setSeg("pickRoleSeg", b.dataset.v); });
+$("pickAddBtn").addEventListener("click", async () => {
+  const name = normName($("pickNewName").value), role = segVal("pickRoleSeg");
+  const err = !name || name.length < 2 ? "Впиши имя сотрудника" : !role ? "Выбери: стажёр или опытный" : "";
+  if (err) { $("pickErr").innerHTML = `<div class="alert"><b>${err}</b></div>`; return; }
+  const btn = $("pickAddBtn"); btn.disabled = true; btn.textContent = "Добавляю…";
+  try {
+    const p = await addStaff(name, role);
+    if (!p) throw new Error("Не получилось добавить, попробуй ещё раз");
+    $("pickNewName").value = ""; $("pickErr").innerHTML = "";
+    selectWaiter(p);
+    toast("«" + p.name + "» добавлен в список");
+  } catch (e) {
+    $("pickErr").innerHTML = `<div class="alert"><b>${esc(failText(e))}</b></div>`;
+  }
+  btn.disabled = false; btn.textContent = "Добавить и выбрать";
+});
+
+/* ---------- сотрудники ---------- */
+async function addStaff(name, role) {
+  try {
+    const res = await api("staffAdd", { data: { name, role, admin: adminName.trim() } });
+    staff = res.staff; saveStaff(); renderSettings();
+  } catch (e) {
+    if (!e.oldScript) throw e;
+    // Старый скрипт ещё не хранит список: держим сотрудника на телефоне, проверки всё равно уходят в таблицу.
+    if (staff.some(x => x.active && nameKey(x.name) === nameKey(name))) throw new Error("«" + name + "» уже есть в списке");
+    staff.push({ id: "local-" + Date.now(), name, role: CFG.roles[role], active: true, added: "", local: true });
+    saveStaff(); renderSettings();
+    toast("Сохранено на этом телефоне. Обнови скрипт Google, чтобы список хранился в таблице.");
+  }
+  return staff.find(x => x.active && nameKey(x.name) === nameKey(name));
+}
+function renderSettings() {
+  const act = activeStaff(), rem = staff.filter(e => !e.active);
+  $("activeLabel").textContent = "В штате · " + act.length;
+  $("staffActive").innerHTML = act.length
+    ? act.map(e => `<button type="button" class="row" data-staff="${esc(e.id)}"><span class="grow"><b>${esc(e.name)}</b><small>${esc(e.role || "статус не указан")}${e.added ? " · в списке с " + esc(e.added) : ""}${e.local ? " · только на этом телефоне" : ""}</small></span><span class="chev">›</span></button>`).join("")
+    : `<div class="empty">Пока никого. Добавь сотрудников выше, и админ будет выбирать их из списка.</div>`;
+  $("removedLabel").hidden = $("staffRemoved").hidden = !rem.length;
+  $("removedLabel").textContent = "Удалённые · " + rem.length;
+  $("staffRemoved").innerHTML = rem.map(e => `<div class="row"><span class="grow"><b>${esc(e.name)}</b><small>Удалён ${esc(e.removed)}${e.removedBy ? " · " + esc(e.removedBy) : ""}</small><small style="color:var(--fg)">Причина: ${esc(e.reason)}</small></span></div>`).join("");
+  $("logoutRow").hidden = !needCode;
+}
+$("setRoleSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setSeg("setRoleSeg", b.dataset.v); });
+$("setAddBtn").addEventListener("click", async () => {
+  const name = normName($("setName").value), role = segVal("setRoleSeg");
+  const err = !name || name.length < 2 ? "Впиши имя сотрудника" : !role ? "Выбери: стажёр или опытный" : "";
+  if (err) { $("setErr").innerHTML = `<div class="alert"><b>${err}</b></div>`; return; }
+  const btn = $("setAddBtn"); btn.disabled = true; btn.textContent = "Добавляю…";
+  try {
+    await addStaff(name, role);
+    $("setName").value = ""; setSeg("setRoleSeg", ""); $("setErr").innerHTML = "";
+    toast("«" + name + "» добавлен");
+  } catch (e) {
+    $("setErr").innerHTML = `<div class="alert"><b>${esc(failText(e))}</b></div>`;
+  }
+  btn.disabled = false; btn.textContent = "Добавить";
+});
+let actId = "";
+$("staffActive").addEventListener("click", e => {
+  const b = e.target.closest("[data-staff]"); if (!b) return;
+  const p = staff.find(x => x.id === b.dataset.staff); if (!p) return;
+  actId = p.id;
+  $("actTitle").textContent = p.name;
+  $("actNote").textContent = (p.role || "Статус не указан") + (p.added ? " · в списке с " + p.added : "");
+  const toExp = p.role !== "Опытный";
+  $("actRole").textContent = toExp ? "Сделать опытным" : "Сделать стажёром";
+  $("actRole").dataset.role = toExp ? "exp" : "intern";
+  openSheet("actionSheet");
+});
+$("actRole").addEventListener("click", async () => {
+  const btn = $("actRole"); btn.disabled = true;
+  try {
+    const res = await api("staffRole", { data: { id: actId, role: btn.dataset.role } });
+    staff = res.staff; saveStaff(); renderSettings(); closeSheets(); toast("Статус изменён");
+  } catch (e) { toast(failText(e)); }
+  btn.disabled = false;
+});
+$("actRemove").addEventListener("click", () => {
+  const p = staff.find(x => x.id === actId); if (!p) return;
+  $("rmTitle").textContent = "Удалить «" + p.name + "»";
+  document.querySelectorAll("input[name=rmReason]").forEach(r => r.checked = false);
+  $("rmText").value = ""; $("rmText").hidden = true; $("rmErr").innerHTML = "";
+  openSheet("removeSheet");
+});
+document.querySelectorAll("input[name=rmReason]").forEach(r => r.addEventListener("change", () => {
+  $("rmText").hidden = r.value !== "own" || !r.checked;
+  if (r.value === "own" && r.checked) $("rmText").focus();
+  $("rmErr").innerHTML = "";
+}));
+$("rmConfirm").addEventListener("click", async () => {
+  const pick = document.querySelector("input[name=rmReason]:checked");
+  const own = $("rmText").value.replace(/\s+/g, " ").trim();
+  const reason = !pick ? "" : pick.value === "fired" ? "Уволен" : own;
+  if (!pick) { $("rmErr").innerHTML = `<div class="alert"><b>Выбери причину: «Уволен» или своими словами.</b></div>`; return; }
+  if (reason.length < 2) { $("rmErr").innerHTML = `<div class="alert"><b>Напиши причину своими словами.</b></div>`; return; }
+  const btn = $("rmConfirm"); btn.disabled = true; btn.textContent = "Удаляю…";
+  try {
+    const p = staff.find(x => x.id === actId);
+    if (p && p.local) {
+      p.active = false; p.removed = new Date().toLocaleDateString("ru-RU"); p.reason = reason; p.removedBy = adminName.trim();
+      saveStaff();
+    } else {
+      const res = await api("staffRemove", { data: { id: actId, reason, admin: adminName.trim() } });
+      staff = res.staff; saveStaff();
+    }
+    renderSettings(); closeSheets(); toast("Удалён из штата"); reportAt = 0;
+  } catch (e) {
+    $("rmErr").innerHTML = `<div class="alert"><b>${esc(failText(e))}</b></div>`;
+  }
+  btn.disabled = false; btn.textContent = "Удалить";
+});
 
 /* ---------- завершение: блокировка и автосохранение ---------- */
 let armed = false;
@@ -408,9 +770,8 @@ async function flushQueue() {
   while (queue.length) {
     const item = queue[0];
     try {
-      const res = await api("save", { payload: item });
+      await api("save", { payload: item });
       queue.shift(); saveQueue(); sent++;
-      if (res && res.journal) { journal = res.journal; renderLog(); }
     } catch (e) {
       const m = errText(e);
       if (isCodeError(m)) { sending = false; logout(codeMsg() + " Неотправленные проверки сохранятся."); return; }
@@ -419,8 +780,10 @@ async function flushQueue() {
   }
   sending = false;
   if (sent) {
-    toast(sent === 1 ? "Сохранено в Google Таблицу" : "Отправлено проверок: " + sent);
+    toast(sent === 1 ? "Проверка сохранена в журнал" : "Отправлено проверок: " + sent);
+    checksAt = 0; reportAt = 0;
     api("refresh").catch(() => {});
+    if (view === "log") loadChecks(false);
   }
   renderResult(); renderQueue();
 }
@@ -433,15 +796,15 @@ function renderResult() {
     return;
   }
   const d = S.done, G = grade(d.total, d.viol.length > 0), pending = inQueue(S.id);
-  const when = new Date(d.at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
-  const roleTxt = CFG.roles[S.role] || "";
-  const status = !pending ? `<div class="lock ok">${lockIcon()}Сохранено в таблице · изменить нельзя</div>`
-    : sending ? `<div class="lock wait">${lockIcon()}Сохраняю в Google Таблицу…</div>`
+  const dt = new Date(d.at);
+  const when = dt.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) + ", " + pad(dt.getHours()) + ":" + pad(dt.getMinutes());
+  const status = !pending ? `<div class="lock ok">${lockIcon()}Сохранено в журнал · изменить нельзя</div>`
+    : sending ? `<div class="lock wait">${lockIcon()}Сохраняю…</div>`
     : `<div class="lock wait">${lockIcon()}Заблокировано · ждёт отправки</div>`;
   box.innerHTML = `<div class="result"><div class="big ${G.c}">${d.total}<i> / 100</i></div><p class="verdict">${G.t}</p>
-    <div class="who">${esc(S.name)} · ${esc(roleTxt)} · ${when}<br>Админ: ${esc(S.admin || "")}</div>${status}</div>
+    <div class="who">${esc(S.name)} · ${esc(CFG.roles[S.role] || "")}<br>${when} · Админ: ${esc(S.admin || "")}</div>${status}</div>
     ${d.viol.length ? `<div class="alert"><b>Нарушения:</b> ${esc(d.viol.join(", "))}. Разобрать с сотрудником сегодня.</div>` : ""}
-    ${pending && !sending ? `<div class="alert info"><b>Ещё не в таблице.</b> ${esc(lastError ? lastError.replace(/[.!]?\s*$/, ".") : "Нет связи.")} Проверка уже заблокирована на этом телефоне и отправится сама, когда появится интернет.</div><button class="btn sec" type="button" id="retryBtn">Отправить сейчас</button>` : ""}
+    ${pending && !sending ? `<div class="alert info"><b>Ещё не в журнале.</b> ${esc(lastError ? lastError.replace(/[.!]?\s*$/, ".") : "Нет связи.")} Проверка уже заблокирована на этом телефоне и отправится сама, когда появится интернет.</div><button class="btn sec" type="button" id="retryBtn">Отправить сейчас</button>` : ""}
     <button class="btn" type="button" id="newBtn">Начать новую проверку</button>`;
   const rb = $("retryBtn"); if (rb) rb.addEventListener("click", flushQueue);
   $("newBtn").addEventListener("click", () => {
@@ -454,46 +817,282 @@ const lockIcon = () => '<svg width="14" height="14" viewBox="0 0 24 24" fill="no
 /* ---------- журнал ---------- */
 function renderQueue() {
   $("queueBox").innerHTML = queue.length
-    ? `<div class="alert info" style="margin:0 0 16px"><b>Ждут отправки: ${queue.length}.</b> Уйдут в таблицу сами, когда появится интернет. <button class="linkbtn" type="button" id="queueBtn">Отправить сейчас</button></div>`
+    ? `<div class="alert info" style="margin:0 0 14px"><b>Ждут отправки: ${queue.length}.</b> Уйдут в журнал сами, когда появится интернет. <button class="linkbtn" type="button" id="queueBtn">Отправить сейчас</button></div>`
     : "";
   const qb = $("queueBtn"); if (qb) qb.addEventListener("click", flushQueue);
 }
-function renderLog() {
-  const L = $("logList");
-  if (journal === null) { L.innerHTML = `<div class="empty">Загружаю журнал…</div>`; return; }
-  if (!journal.length) { L.innerHTML = `<div class="empty">Пока пусто. Завершённые проверки появятся здесь сами.</div>`; return; }
-  L.innerHTML = journal.map(x => {
-    const G = grade(x.total, x.viol > 0);
-    return `<div class="row"><span class="grow"><b style="font-weight:600">${esc(x.name)}</b><small>${esc(x.role)} · ${esc(x.date)} · ${esc(x.admin)}</small></span><span class="pill ${G.c}">${G.p}</span><span class="num" style="min-width:34px;text-align:right">${x.total}</span></div>`;
-  }).join("");
+async function loadChecks(more) {
+  if (checksLoading) return;
+  checksLoading = true; renderLog();
+  try {
+    const res = await api("checks", { offset: more ? journalItems.length : 0, limit: 50 });
+    journalItems = more ? journalItems.concat(res.items) : res.items;
+    checksTotal = res.total; checksAt = Date.now(); logError = "";
+    LS.set(K.checks, JSON.stringify({ items: journalItems.slice(0, 50), total: checksTotal }));
+  } catch (e) {
+    logError = failText(e);
+  }
+  checksLoading = false; renderLog();
 }
-$("reloadBtn").addEventListener("click", () => loadBoot(true));
-$("logoutBtn").addEventListener("click", () => logout(""));
+function pendingChecks() {
+  return queue.map(q => {
+    const c = calcOf(q.menu, q.rot, q.svc, q.viol), dt = new Date(q.finishedAt);
+    return {
+      id: q.id, pending: true, name: q.name, role: CFG.roles[q.role] || "", admin: q.admin,
+      date: pad(dt.getDate()) + "." + pad(dt.getMonth() + 1) + "." + dt.getFullYear(), time: pad(dt.getHours()) + ":" + pad(dt.getMinutes()),
+      total: c.total, verdict: grade(c.total, c.viol.length > 0).p, menu: q.menu, rot: q.rot.map(x => (x ? 1 : 0)), svc: q.svc,
+      viol: CFG.violations.map(v => (q.viol[v[0]] ? 1 : 0)), violCount: c.viol.length, menuTotal: c.menuTotal, rotDone: c.rotDone,
+      pMenu: c.pMenu, pRot: c.pRot, attempt: 0, delta: null, sigOk: null,
+    };
+  }).reverse();
+}
+function renderLog() {
+  renderQueue();
+  const q = nameKey($("logSearch").value);
+  const all = pendingChecks().concat(journalItems.filter(x => !inQueue(x.id)));
+  const list = all.filter(x => !q || nameKey(x.name).includes(q) || nameKey(x.admin).includes(q));
+  const L = $("logList");
+  $("logRefresh").disabled = checksLoading;
+  $("logRefresh").textContent = checksLoading ? "Загружаю…" : "Обновить";
+  $("logMeta").innerHTML = (logError ? `<span class="bad">${esc(logError)}</span>` : checksTotal ? `Всего проверок: ${checksTotal}` + (q ? ` · найдено: ${list.length}` : "") : "");
+  if (!list.length) {
+    L.innerHTML = `<div class="empty">${checksLoading ? "Загружаю журнал…" : q ? "По этому имени ничего нет." : "Пока пусто. Завершённые проверки появятся здесь сами."}</div>`;
+  } else {
+    L.innerHTML = list.map(x => {
+      const G = grade(x.total, x.violCount > 0);
+      return `<button type="button" class="row" data-check="${esc(x.id)}"><span class="grow"><b>${esc(x.name)}</b>${x.violCount ? ' <span class="pill bad">⚠ нарушение</span>' : ""}<small>${esc(x.date)} в ${esc(x.time)} · ${esc(x.role)} · админ ${esc(x.admin)}</small>${x.pending ? '<small class="warn">ждёт отправки</small>' : ""}</span><span class="pill ${G.c === "bad" && x.violCount ? "crit" : G.c}">${G.p}</span><span class="val ${lvlScore(x.total)}" style="min-width:30px;text-align:right">${x.total}</span><span class="chev">›</span></button>`;
+    }).join("");
+  }
+  $("moreBtn").hidden = q !== "" || journalItems.length >= checksTotal || !journalItems.length;
+}
+$("logSearch").addEventListener("input", renderLog);
+$("logRefresh").addEventListener("click", () => loadChecks(false));
+$("moreBtn").addEventListener("click", () => loadChecks(true));
+$("logList").addEventListener("click", e => {
+  const b = e.target.closest("[data-check]"); if (b) openCheck(b.dataset.check);
+});
+function openCheck(id) {
+  const c = pendingChecks().concat(journalItems).find(x => x.id === id);
+  if (!c) return;
+  renderCheck(c);
+  go("check");
+  try { history.pushState({ check: id }, ""); } catch (e) {}
+}
+$("checkBack").addEventListener("click", () => { if (history.state && history.state.check) history.back(); else go("log"); });
+addEventListener("popstate", () => { if (view === "check") go("log"); });
+function scoreRow(label, v, max) {
+  const p = max ? v / max : 0;
+  return `<div class="row"><span class="grow">${esc(label)}${bar(p)}</span><span class="val ${lvl(p)}">${v}<span style="color:var(--muted);font-weight:400"> / ${max}</span></span></div>`;
+}
+function renderCheck(c) {
+  const G = grade(c.total, c.violCount > 0);
+  const viol = CFG.violations.filter((v, j) => c.viol[j]).map(v => v[1]);
+  const blocks = [["Знание меню", c.pMenu, CFG.menuPoints], ["Ротация столов", c.pRot, CFG.rotPoints]].concat(CFG.service.map(([k, l, m]) => [l, c.svc[k], m]));
+  $("checkBox").innerHTML = `
+    <div class="result"><div class="big ${G.c}">${c.total}<i> / 100</i></div><p class="verdict">${G.t}</p>
+      <div class="who"><b style="color:var(--fg)">${esc(c.name)}</b> · ${esc(c.role)}<br>${esc(c.date)} в ${esc(c.time)} · Админ: ${esc(c.admin)}</div>
+      ${c.pending ? `<div class="lock wait">${lockIcon()}Ждёт отправки</div>` : `<div class="lock">${c.attempt ? "Проверка №" + c.attempt : "Проверка"}${c.delta != null ? " · " + (c.delta > 0 ? "+" : c.delta < 0 ? "−" : "±") + Math.abs(c.delta) + " к прошлой" : " · первая"}</div>`}
+    </div>
+    ${viol.length ? `<div class="alert"><b>Нарушения:</b> ${esc(viol.join(", "))}</div>` : ""}
+    <div class="group-label">Из чего итог · ${c.total} из 100</div>
+    <div class="group">${blocks.map(([l, v, m]) => scoreRow(l, v, m)).join("")}</div>
+    <div class="group-label">Экзамен по меню · ${c.menuTotal} из ${MENU_MAX}</div>
+    <div class="group">${CFG.menu.map(([l, m], i) => scoreRow(l, c.menu[i], m)).join("")}</div>
+    <div class="group-label">Ротация столов · ${c.rotDone} из ${CFG.rotation.length}</div>
+    <div class="group">${CFG.rotation.map((l, i) => `<div class="row"><span class="grow">${esc(l)}</span><span class="val ${c.rot[i] ? "ok" : "bad"}">${c.rot[i] ? "✓ выполнено" : "✗ нет"}</span></div>`).join("")}</div>
+    <div class="group-label">Нарушения</div>
+    <div class="group">${CFG.violations.map((v, j) => `<div class="row"><span class="grow">${esc(v[1])}</span><span class="val ${c.viol[j] ? "bad" : "ok"}">${c.viol[j] ? "да" : "нет"}</span></div>`).join("")}</div>
+    <p class="foot">Номер ${esc(c.id)}${c.sigOk === false ? ' · <span class="bad">⚠ запись изменили в таблице после сохранения</span>' : c.sigOk ? " · запись не менялась после сохранения" : ""}</p>`;
+}
+
+/* ---------- аналитика ---------- */
+const STATS_TITLES = { dash: "Сводка", staff: "Официанты", matrix: "Матрица навыков", crit: "Критерии", trend: "Динамика", admins: "Администраторы", viol: "Нарушения" };
+async function loadReport() {
+  if (reportLoading) return;
+  reportLoading = true; renderStats();
+  try {
+    report = await api("report");
+    reportAt = Date.now(); statsError = "";
+    LS.set(K.report, JSON.stringify(report));
+  } catch (e) {
+    statsError = failText(e);
+  }
+  reportLoading = false; renderStats();
+}
+$("statsRefresh").addEventListener("click", loadReport);
+$("statsChips").addEventListener("click", e => {
+  const b = e.target.closest("[data-st]"); if (!b) return;
+  statsTab = b.dataset.st; LS.set(K.tab, statsTab); renderStats(); scrollTo(0, 0);
+});
+function renderStats() {
+  document.querySelectorAll("#statsChips .chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.st === statsTab));
+  $("statsTitle").textContent = STATS_TITLES[statsTab] || "Сводка";
+  $("statsRefresh").disabled = reportLoading;
+  $("statsRefresh").textContent = reportLoading ? "Загружаю…" : "Обновить";
+  const R = report;
+  $("statsMeta").innerHTML = statsError ? `<span class="bad">${esc(statsError)}</span>` + (R ? " Показаны последние сохранённые данные." : "")
+    : R ? `Обновлено ${esc(R.built)}` + (R.n ? ` · ${R.n} ${plural(R.n, ["проверка", "проверки", "проверок"])} с ${esc(R.from)} по ${esc(R.to)}` : "") : "";
+  const box = $("statsBox");
+  if (!R) { box.innerHTML = `<div class="empty">${reportLoading ? "Считаю аналитику…" : statsError ? "" : "Нет данных."}</div>`; return; }
+  if (!R.n) {
+    box.innerHTML = `<div class="empty">Пока нет ни одной проверки. Аналитика появится после первой завершённой проверки.</div>` +
+      (R.neverChecked && R.neverChecked.length ? `<div class="group-label">В штате, ещё без проверок</div><div class="group">${R.neverChecked.map(n => `<div class="row">${esc(n)}</div>`).join("")}</div>` : "");
+    return;
+  }
+  box.innerHTML = (VIEW_RENDER[statsTab] || VIEW_RENDER.dash)(R);
+}
+const sec = t => `<div class="group-label">${esc(t)}</div>`;
+const VIEW_RENDER = {
+  dash(R) {
+    const groups = [];
+    R.actions.forEach(a => { let g = groups.find(x => x.name === a.name); if (!g) groups.push(g = { name: a.name, items: [] }); g.items.push(a); });
+    const PR = { 1: ["Срочно", "bad"], 2: ["Важно", "warn"], 3: ["Плановое", "muted"] };
+    return sec("Главные цифры") + `<div class="kpis">${R.kpis.map(k => `<div class="kpi"><b class="${/⚠/.test(k[1]) ? "bad" : ""}">${esc(k[1])}</b><span>${esc(k[0])}</span><small>${esc(k[2])}</small></div>`).join("")}</div>`
+      + sec("Выводы") + `<div class="ins">${R.insights.map(t => `<p class="${t.charAt(0) === "⚠" ? "alarm" : ""}">${esc(t)}</p>`).join("")}</div>`
+      + sec("Что сделать на этой неделе") + (groups.length ? `<div class="cards">${groups.map(g => `<div class="card"><h3>${esc(g.name)}</h3>${g.items.map(a => `<div class="todo"><span class="pill ${PR[a.prio][1]}">${PR[a.prio][0]}</span><div class="what" style="margin-top:6px">${esc(a.what)}</div><div class="how">${esc(a.todo)}</div></div>`).join("")}</div>`).join("")}</div>` : `<div class="empty">Срочных задач нет: команда в порядке.</div>`)
+      + sec("Где команда теряет баллы") + `<div class="group">${R.blocks.map(b => `<div class="row"><span class="grow">${esc(b.label)}<small>в среднем ${num1(b.avg)} из ${b.max}${b.potential >= 0.5 ? " · можно вернуть +" + num1(b.potential) : ""}</small>${bar(b.pct)}</span><span class="val ${lvl(b.pct)}">${pctTxt(b.pct)}</span></div>`).join("")}</div>`
+      + sec("Слабые места команды") + (() => { const w = R.crit.slice().sort((a, b) => a.now - b.now).filter(x => x.now < 0.9).slice(0, 5); return w.length ? `<div class="group">${w.map(critRow).join("")}</div>` : `<div class="empty">Все пункты выше 90%.</div>`; })()
+      + sec("Сильные стороны") + `<div class="group">${R.crit.slice().sort((a, b) => b.now - a.now).slice(0, 3).map(critRow).join("")}</div>`
+      + sec("Лидеры") + `<div class="group">${R.leaders.map(w => `<div class="row"><span class="grow"><b>${esc(w.name)}</b><small>${esc(w.role)}</small></span><span class="pill ${verdictCls(w.verdict)}">${esc(w.verdict)}</span><span class="val ${lvlScore(w.total)}">${w.total}</span></div>`).join("")}</div>`
+      + sec("Больше всех выросли") + (R.improved.length ? `<div class="group">${R.improved.map(w => `<div class="row"><span class="grow"><b>${esc(w.name)}</b><small>${w.first} → ${w.last} · ${w.n} ${plural(w.n, ["проверка", "проверки", "проверок"])}</small></span><span class="val ok">+${w.growth}</span></div>`).join("")}</div>` : `<div class="empty">Пока не с чем сравнивать: нужно хотя бы 2 проверки у одного человека.</div>`)
+      + (R.neverChecked && R.neverChecked.length ? sec("В штате, ещё без проверок") + `<div class="group">${R.neverChecked.map(n => `<div class="row">${esc(n)}</div>`).join("")}</div>` : "");
+  },
+  staff(R) {
+    return `<div class="cards">${R.staff.map(s => `<details class="card"><summary>
+        <div style="display:flex;align-items:center;gap:12px"><div class="grow" style="flex:1;min-width:0"><h3>${esc(s.name)} ${s.active ? "" : `<span class="pill muted">${esc(s.status)}</span>`}</h3>
+        <div class="sub">${esc(s.role)} · ${s.n} ${plural(s.n, ["проверка", "проверки", "проверок"])} · последняя ${esc(s.last)}${s.since ? " (" + s.since + " дн. назад)" : " (сегодня)"}</div>
+        <div style="margin-top:6px"><span class="pill ${verdictCls(s.verdict)}">${esc(s.verdict)}</span>${s.delta != null ? ` <span class="pill ${s.delta > 0 ? "ok" : s.delta < 0 ? "bad" : "muted"}">${signed(s.delta)} к прошлой</span>` : ""}${s.viol ? ` <span class="pill bad">⚠ нарушений: ${s.viol}</span>` : ""}</div></div>
+        <div style="text-align:right"><div class="score ${lvlScore(s.total)}">${s.total}</div><span class="chev" style="color:#c4c4c7">›</span></div></div>
+      </summary>
+      ${spark(s.history)}
+      <div class="statgrid"><div><b>${num1(s.avg)}</b><small>средний</small></div><div><b>${s.best}</b><small>лучший</small></div><div><b>${s.worst}</b><small>худший</small></div></div>
+      <div style="margin-top:10px">
+        <div class="kv"><span>Меню</span><b class="${lvl(s.menu)}">${pctTxt(s.menu)}</b></div>${bar(s.menu)}
+        <div class="kv" style="margin-top:6px"><span>Ротация</span><b class="${lvl(s.rot)}">${pctTxt(s.rot)}</b></div>${bar(s.rot)}
+        <div class="kv" style="margin-top:6px"><span>Сервис</span><b class="${lvl(s.svc)}">${pctTxt(s.svc)}</b></div>${bar(s.svc)}
+      </div>
+      <div style="margin-top:10px">
+        <div class="kv"><span>Самое слабое место</span><b>${esc(s.weakest || "—")}</b></div>
+        <div class="kv"><span>Самое сильное</span><b>${esc(s.strongest || "—")}</b></div>
+        <div class="kv"><span>Первая проверка</span><b>${esc(s.first)}</b></div>
+        ${s.prev != null ? `<div class="kv"><span>Прошлый балл</span><b>${s.prev}</b></div>` : ""}
+        ${s.ready ? `<div class="kv"><span>Стажёр → 90+</span><b>${esc(s.ready)}</b></div>` : ""}
+      </div>
+      <div class="rec">${esc(s.rec)}</div>
+      <div class="group-label" style="margin-left:0">История</div>
+      <div style="font-size:14px">${s.history.slice().reverse().map(h => `<div class="kv"><span>${esc(h.d)}</span><b class="${lvlScore(h.t)}">${h.t}</b></div>`).join("")}</div>
+    </details>`).join("")}</div>`;
+  },
+  matrix(R) {
+    const M = R.matrix, cnt = { "Меню": 0, "Ротация": 0, "Сервис": 0 }, P = { "Меню": "М", "Ротация": "Р", "Сервис": "С" };
+    const codes = M.cols.map(c => P[c.block] + (++cnt[c.block]));
+    const first = i => i === 0 || M.cols[i].block !== M.cols[i - 1].block;
+    const cell = (v, i) => {
+      if (v == null) return `<td class="${first(i) ? "sep" : ""}">—</td>`;
+      const rot = M.cols[i].block === "Ротация";
+      return `<td class="c-${lvl(v)}${first(i) ? " sep" : ""}" title="${esc(M.cols[i].label)}">${rot && (v === 0 || v === 1) ? (v ? "✓" : "✗") : Math.round(v * 100)}</td>`;
+    };
+    return `<p class="foot" style="margin:0 0 10px">Кто что знает по последней проверке, % от максимума. Красное — учить в первую очередь.</p>
+      <div class="matrix-wrap"><table class="mx"><thead><tr><th class="nm">Официант</th><th>Итог</th>${codes.map((c, i) => `<th class="${first(i) ? "sep" : ""}" title="${esc(M.cols[i].label)}">${c}</th>`).join("")}</tr></thead><tbody>
+      ${M.rows.map(r => `<tr><td class="nm"><b>${esc(r.name)}</b><br><small style="color:var(--muted)">${esc(r.role)}</small></td><td class="c-${lvlScore(r.total)}">${r.total}</td>${r.cells.map(cell).join("")}</tr>`).join("")}
+      <tr class="team"><td class="nm">Команда</td><td class="c-${lvlScore(M.team.total)}">${num1(M.team.total)}</td>${M.team.cells.map((v, i) => `<td class="c-${lvl(v)}${first(i) ? " sep" : ""}">${v == null ? "—" : Math.round(v * 100)}</td>`).join("")}</tr>
+      </tbody></table></div>
+      <div class="legend">${M.cols.map((c, i) => `<div><b>${codes[i]}</b> — ${esc(c.label)}</div>`).join("")}</div>`;
+  },
+  crit(R) {
+    return `<p class="foot" style="margin:0 0 10px">Каждый пункт проверки, сначала самые слабые. % — насколько команда выполняет пункт сейчас.</p><div class="cards">${R.crit.slice().sort((a, b) => a.now - b.now).map(x => `<div class="card">
+      <h3>${esc(x.label)} <span class="pill ${({ "Критично": "crit", "Слабо": "bad", "Норма": "warn", "Отлично": "ok" })[x.status]}">${esc(x.status)}</span></h3>
+      <div class="sub">${esc(x.block)} · ${x.max ? "максимум " + x.max + " · " : "да/нет · "}вес в итоге ${num1(x.weight)} ${plural(Math.round(x.weight), ["балл", "балла", "баллов"])}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:8px"><div style="flex:1">${bar(x.now)}</div><b class="${lvl(x.now)}" style="font-variant-numeric:tabular-nums">${pctTxt(x.now)}</b></div>
+      <div class="statgrid"><div><b>${pctTxt(x.intern)}</b><small>стажёры</small></div><div><b>${pctTxt(x.exp)}</b><small>опытные</small></div><div><b>${pctTxt(x.all)}</b><small>все проверки</small></div></div>
+      <div style="margin-top:8px">
+        <div class="kv"><span>Последние 30 дней</span><b>${pctTxt(x.r30)}${x.change != null ? ` <span class="${x.change > 0 ? "ok" : x.change < 0 ? "bad" : ""}">(${x.change > 0 ? "+" : x.change < 0 ? "−" : "±"}${Math.abs(Math.round(x.change * 100))}%)</span>` : ""}</b></div>
+        <div class="kv"><span>Предыдущие 30 дней</span><b>${pctTxt(x.rp30)}</b></div>
+        <div class="kv"><span>Ниже 70%</span><b>${x.low.length ? x.low.map(l => esc(l.name) + (x.block === "Ротация" ? "" : " " + pctTxt(l.pct))).join(", ") : "никого"}</b></div>
+      </div></div>`).join("")}</div>`;
+  },
+  trend(R) {
+    const pts = R.weeks.map(w => ({ label: w.short, v: w.avg }));
+    const row = (label, s) => `<div class="row"><span class="grow"><b>${esc(label)}</b><small>${s.n} ${plural(s.n, ["проверка", "проверки", "проверок"])} · готов ${pctTxt(s.ready)} · дообучение ${pctTxt(s.train)} · не готов ${pctTxt(s.notReady)}${s.viol ? " · нарушений " + s.viol : ""}</small><small>меню ${pctTxt(s.menu)} · ротация ${pctTxt(s.rot)} · сервис ${pctTxt(s.svc)} · разброс ${s.min}–${s.max}</small></span><span class="val ${lvlScore(s.avg)}">${num1(s.avg)}</span></div>`;
+    return sec("Средний балл по неделям") + (pts.length >= 2 ? `<div class="card">${lineChart(pts)}</div>` : `<div class="empty">График появится, когда будут проверки хотя бы за 2 недели.</div>`)
+      + sec("По неделям") + `<div class="group">${R.weeks.slice().reverse().map(w => row(w.label, w)).join("")}</div>`
+      + sec("По месяцам") + `<div class="group">${R.months.slice().reverse().map(m => row(m.label, m)).join("")}</div>`
+      + sec("По дням недели") + `<div class="group">${R.dows.map(d => `<div class="row"><span class="grow"><b>${esc(d.day)}</b><small>${d.n} ${plural(d.n, ["проверка", "проверки", "проверок"])} · готов ${pctTxt(d.ready)}${d.viol ? " · нарушений " + d.viol : ""}</small>${bar(d.avg / 100)}</span><span class="val ${lvlScore(d.avg)}">${num1(d.avg)}</span></div>`).join("")}</div>`;
+  },
+  admins(R) {
+    return `<p class="foot" style="margin:0 0 10px">«На тех же официантах» — насколько админ ставит выше (+) или ниже (−) коллег тем же людям. Самый честный показатель строгости.</p><div class="cards">${R.admins.map(a => `<div class="card">
+      <h3>${esc(a.name)}</h3><div class="sub">${a.n} ${plural(a.n, ["проверка", "проверки", "проверок"])} · последняя ${esc(a.last)}</div>
+      <div class="statgrid"><div><b class="${lvlScore(a.avg)}">${num1(a.avg)}</b><small>средний балл</small></div><div><b>${a.dev == null ? "—" : signed(a.dev)}</b><small>от среднего</small></div><div><b>${a.same == null ? "—" : signed(a.same)}</b><small>на тех же${a.sameN ? " (" + a.sameN + ")" : ""}</small></div>
+      <div><b>${pctTxt(a.ready)}</b><small>«Готов»</small></div><div><b>${pctTxt(a.viol)}</b><small>с нарушениями</small></div><div><b>${a.sd == null ? "—" : num1(a.sd)}</b><small>разброс</small></div></div>
+      ${a.signals.length ? a.signals.map(s => `<div class="alert ${/Мало проверок/.test(s) ? "" : "info"}" style="margin-top:10px;${/Мало проверок/.test(s) ? "background:var(--soft)" : ""}">${esc(s)}</div>`).join("") : `<p class="ok" style="margin-top:10px">Норма</p>`}
+    </div>`).join("")}</div>`;
+  },
+  viol(R) {
+    return sec("Итого по видам") + `<div class="group">${R.violTypes.map(v => `<div class="row"><span class="grow"><b>${esc(v.label)}</b><small>${v.who ? "У кого: " + esc(v.who) : "Не было"}</small></span><span class="val ${v.total ? "bad" : "ok"}">${v.total}<small style="font-weight:400">за 30 дн.: ${v.in30}</small></span></div>`).join("")}</div>`
+      + sec("Все случаи, новые сверху") + (R.violLog.length ? `<div class="group">${R.violLog.map(x => `<button type="button" class="row" data-check="${esc(x.id)}"><span class="grow"><b>${esc(x.name)}</b><small>${esc(x.date)} · ${esc(x.role)} · админ ${esc(x.admin)}</small><small class="bad">${esc(x.list.join(", "))}</small></span><span class="val ${lvlScore(x.total)}">${x.total}</span></button>`).join("")}</div>` : `<div class="empty">Нарушений не было.</div>`);
+  },
+};
+function critRow(x) {
+  return `<div class="row"><span class="grow">${esc(x.label)}<small>${esc(x.block)}${x.low.length ? " · ниже 70%: " + x.low.map(l => esc(l.name)).join(", ") : ""}</small>${bar(x.now)}</span><span class="val ${lvl(x.now)}">${pctTxt(x.now)}</span></div>`;
+}
+$("statsBox").addEventListener("click", e => {
+  const b = e.target.closest("[data-check]"); if (!b) return;
+  const id = b.dataset.check;
+  if (journalItems.some(x => x.id === id)) openCheck(id);
+  else { toast("Открываю журнал…"); go("log"); }
+});
+function lineChart(pts) {
+  const W = 340, H = 170, L = 28, R = 10, T = 10, B = 24, n = pts.length;
+  const x = i => L + (W - L - R) * (n === 1 ? 0.5 : i / (n - 1));
+  const y = v => T + (H - T - B) * (1 - Math.max(0, Math.min(100, v)) / 100);
+  const path = pts.map((p, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(p.v).toFixed(1)).join(" ");
+  const area = path + ` L${x(n - 1).toFixed(1)} ${y(0)} L${x(0).toFixed(1)} ${y(0)} Z`;
+  const step = Math.max(1, Math.ceil(n / 6));
+  const labels = pts.map((p, i) => (i % step === 0 || i === n - 1) ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(p.label)}</text>` : "").join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Средний балл по неделям">
+    ${[0, 50, 100].map(v => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 3}" text-anchor="end">${v}</text>`).join("")}
+    <line class="g90" x1="${L}" x2="${W - R}" y1="${y(90)}" y2="${y(90)}"/><line class="g75" x1="${L}" x2="${W - R}" y1="${y(75)}" y2="${y(75)}"/>
+    <text x="${W - R}" y="${y(90) - 3}" text-anchor="end">90</text><text x="${W - R}" y="${y(75) - 3}" text-anchor="end">75</text>
+    <path class="area" d="${area}"/><path class="line" d="${path}"/>
+    ${pts.map((p, i) => `<circle class="dot" cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="3"/>`).join("")}${labels}</svg>`;
+}
+function spark(h) {
+  if (!h || h.length < 2) return "";
+  const W = 300, H = 36, n = h.length;
+  const x = i => 4 + (W - 8) * (i / (n - 1)), y = v => 3 + (H - 6) * (1 - v / 100);
+  const d = h.map((p, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(p.t).toFixed(1)).join(" ");
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><line class="g90" x1="0" x2="${W}" y1="${y(90)}" y2="${y(90)}"/><path class="line" d="${d}"/><circle class="dot" cx="${x(n - 1)}" cy="${y(h[n - 1].t)}" r="3"/></svg>`;
+}
 
 /* ---------- вход ---------- */
-function loadBoot(showToast) {
+function loadBoot() {
   return api("login").then(res => {
     needCode = !!res.needCode;
-    names = res.names || []; admins = res.admins || []; journal = res.journal || [];
-    if (res.cafe) { $("cafeTitle").textContent = res.cafe; $("logEyebrow").textContent = res.cafe; }
-    fillLists(); renderLog(); renderQueue();
-    if (showToast) toast("Журнал обновлён");
+    admins = res.admins || [];
+    if (res.staff) { staff = res.staff; serverOld = false; }
+    else {
+      // Старый скрипт: списка сотрудников ещё нет, берём имена из проверок и тех, кого добавили на телефоне.
+      serverOld = true;
+      const local = staff.filter(e => e.local);
+      staff = (res.names || []).map((n, i) => ({ id: "n" + i, name: n, role: "", active: true, added: "" }))
+        .concat(local.filter(l => !(res.names || []).some(n => nameKey(n) === nameKey(l.name))));
+    }
+    saveStaff(); fillAdmins(); renderSettings();
+    if (res.cafe) $("cafeTitle").textContent = res.cafe;
     flushQueue();
   }).catch(e => {
     const m = errText(e);
     if (isCodeError(m)) logout(codeMsg());
-    // Скрипт Google ещё не умеет принимать запросы с сайта (старая версия): открываем приложение у Google.
-    else if (e && (e.network || e.badResponse) && API_URL && navigator.onLine && !queue.length && !S.done && untouched()) location.replace(API_URL);
-    else if (showToast) toast("Не удалось обновить: " + m);
   });
 }
 const codeMsg = () => code ? "Код доступа изменился. Введи новый." : "Владелец включил вход по коду. Введи код.";
 function logout(msg) {
   needCode = true;
-  code = ""; LS.del(K_CODE);
+  code = ""; LS.del(K.code);
   $("loginErr").innerHTML = msg ? `<div class="alert"><b>${esc(msg)}</b></div>` : "";
   go("login");
 }
+$("logoutBtn").addEventListener("click", () => logout(""));
 $("loginBtn").addEventListener("click", tryLogin);
 $("code").addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); });
 function tryLogin() {
@@ -503,9 +1102,9 @@ function tryLogin() {
   $("loginErr").innerHTML = "";
   code = v;
   api("login").then(res => {
-    LS.set(K_CODE, v); $("code").value = ""; $("codeGroup").classList.remove("invalid");
-    names = res.names || []; admins = res.admins || []; journal = res.journal || [];
-    fillLists(); renderLog();
+    LS.set(K.code, v); $("code").value = ""; $("codeGroup").classList.remove("invalid");
+    admins = res.admins || []; fillAdmins();
+    if (res.staff) { staff = res.staff; saveStaff(); }
     go(S.done ? "result" : "menu");
     flushQueue();
   }).catch(e => {
@@ -516,37 +1115,50 @@ function tryLogin() {
 }
 
 /* ---------- навигация ---------- */
-const VIEWS = ["login", "menu", "rotation", "service", "result", "log"], STEPS = ["menu", "rotation", "service", "result"];
+const VIEWS = ["login", "menu", "rotation", "service", "result", "log", "check", "stats", "settings"];
+const STEPS = ["menu", "rotation", "service", "result"];
+const TAB_OF = { menu: "check", rotation: "check", service: "check", result: "check", log: "log", check: "log", stats: "stats", settings: "settings" };
 function go(v) {
   if (needCode && !code) v = "login";
-  if (v !== "login") {
-    if (S.done && ["menu", "rotation", "service"].includes(v)) v = "result";
+  if (STEPS.includes(v)) {
+    if (S.done && v !== "result") v = "result";
     if (!S.done && (v === "rotation" || v === "service") && missing1().length) { v = "menu"; setTimeout(showReq, 0); }
+    lastStep = v;
   }
+  if (v !== "login") closeSheets();
+  view = v;
   VIEWS.forEach(x => $("v-" + x).hidden = x !== v);
   const ci = STEPS.indexOf(v);
   $("steps").hidden = ci < 0;
   $("nav").hidden = v === "login";
   document.querySelectorAll("#steps button").forEach((b, i) => { b.className = i === ci ? "cur" : (i < ci || S.done) ? "done" : ""; });
-  document.querySelectorAll("#nav button").forEach(b => {
-    b.classList.toggle("off", !!S.done && ["menu", "rotation", "service"].includes(b.dataset.t));
-    if (b.dataset.t === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
-  });
-  if (v === "log") { renderLog(); renderQueue(); $("logoutRow").hidden = !needCode; }
+  document.querySelectorAll("#nav button").forEach(b => { if (b.dataset.tab === TAB_OF[v]) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  if (v === "log") { renderLog(); if (Date.now() - checksAt > 30000) loadChecks(false); }
+  if (v === "stats") {
+    renderStats();
+    const chip = document.querySelector("#statsChips [aria-pressed=true]");
+    if (chip) $("statsChips").scrollLeft = chip.offsetLeft - 16;
+    if (Date.now() - reportAt > 60000) loadReport();
+  }
+  if (v === "settings") renderSettings();
   scrollTo(0, 0);
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-go]");
-  if (b) go(b.dataset.go);
+  if (b) { go(b.dataset.go); return; }
+  const t = e.target.closest("[data-tab]");
+  if (t) {
+    const tab = t.dataset.tab;
+    go(tab === "check" ? (S.done ? "result" : lastStep) : tab);
+  }
 });
 
 /* ---------- старт ---------- */
 $("cafeTitle").textContent = CFG.cafe;
-$("logEyebrow").textContent = CFG.cafe;
 build();
-renderQueue();
-if (!needCode || code) { go(S.done ? "result" : "menu"); loadBoot(false); }
-else go("login");
+renderSettings();
+go(S.done ? "result" : "menu");
+loadBoot();
 </script>
 </body>
 </html>
